@@ -174,10 +174,8 @@ def train_beta_VAE_alone(args,k=0):
 
         model.eval()
         with torch.no_grad():
-            # print(X_validation.shape)
             X_recon_val_cat, x_recon_val_num, mu_val, logvar_val = model(X_validation)
             val_loss = model.loss(X_recon_val_cat, x_recon_val_num, X_validation_cat_one_hot.float(), X_validation_num, n_cat, mu_val, logvar_val)
-            # raise
             scheduler.step(val_loss)
             new_lr = optimizer.param_groups[0]['lr']
             if new_lr != current_lr:
@@ -191,7 +189,6 @@ def train_beta_VAE_alone(args,k=0):
                 best_loss = curr_loss.item()
                 patience = 0
                 torch.save(model.state_dict(), f'{path_model_save}/model_vae_alone_{beta_str}_{k}.pt')
-                # print(epoch)
             else:
                 patience += 1
                 if patience == args.beta_VAE.patience_max:
