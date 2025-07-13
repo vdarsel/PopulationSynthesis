@@ -82,7 +82,6 @@ def sample_WGAN_alone(args, k = 256):
     d_numerical = len(idx_num)
     categories = [len(np.unique(training_data[:,id])) for id in idx_cat]
 
-
     ####################
     ### Import Model ###
     ####################
