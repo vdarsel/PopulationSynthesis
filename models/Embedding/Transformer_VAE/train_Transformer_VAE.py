@@ -102,10 +102,10 @@ def learn_encoding_Transformer_VAE(args):
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
 
-    model_save_path = f'{ckpt_dir}/model.pt'
-    encoder_save_path = f'{ckpt_dir}/encoder.pt'
-    decoder_save_path = f'{ckpt_dir}/decoder.pt'
-    path_time = f'{ckpt_dir}/training_time_VAE.txt'
+    model_save_path = f'{ckpt_dir}/model_Transformer_VAE.pt'
+    encoder_save_path = f'{ckpt_dir}/encoder_Transformer_VAE.pt'
+    decoder_save_path = f'{ckpt_dir}/decoder_Transformer_VAE.pt'
+    path_time = f'{ckpt_dir}/training_time_Transformer_VAE.txt'
     
     X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename, idx_cat, idx_num, T_dict, )
 

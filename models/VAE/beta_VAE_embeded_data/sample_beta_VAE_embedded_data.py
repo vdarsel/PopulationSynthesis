@@ -5,7 +5,7 @@ from tqdm import tqdm
 from utils.utils_train import get_input_embedded_training_data
 from models.VAE.beta_VAE_embeded_data.model_beta_VAE_embedded_data import Beta_VAE_Embedded_data
 
-def sample_beta_VAE_from_embedded_data(args,k=0): 
+def sample_beta_VAE_from_embedded_data(args, beta, k=0): 
     
     print("\n\nSampling beta-VAE model on embedded data\n\n")
 
@@ -19,8 +19,6 @@ def sample_beta_VAE_from_embedded_data(args,k=0):
     
     path_model = f'ckpt/{args.folder_save}'
     
-    beta = args.beta
-
     n_batch = args.batch_size_generation
 
     #################

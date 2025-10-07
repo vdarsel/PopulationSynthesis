@@ -42,7 +42,7 @@ def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
     return mse_loss, ce_loss, loss_kld, acc
 
 
-def train_beta_VAE_alone(args,k=0):
+def train_beta_VAE_alone(args, beta, k=0):
 
     print("\n\nTraining beta-VAE on raw data\n\n")
 
@@ -62,7 +62,6 @@ def train_beta_VAE_alone(args,k=0):
 
     path_model_save = f'ckpt/{args.folder_save}'
 
-    beta = args.beta
     if beta%1==0:
         beta_str = str(beta).split(".0")[0]
     else:

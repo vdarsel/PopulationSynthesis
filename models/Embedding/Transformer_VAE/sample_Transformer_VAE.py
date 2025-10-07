@@ -106,7 +106,7 @@ def decode_Transformer_VAE(args, term):
     ### Load model ###
     ##################
 
-    decoder_save_path = f'{ckpt_dir}/decoder.pt'
+    decoder_save_path = f'{ckpt_dir}/decoder_Transformer_VAE.pt'
 
     decoder = Decoder_model(NUM_LAYERS, d_numerical, categories, D_TOKEN, n_head = N_HEAD, factor = FACTOR)
 

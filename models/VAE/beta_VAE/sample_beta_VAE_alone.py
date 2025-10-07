@@ -7,7 +7,7 @@ import shutil
 from models.VAE.beta_VAE.model_beta_VAE_alone import Beta_VAE
 from utils.utils_sample import get_categories_inverse, get_normalizer_num, preprocessing_cat_data_dataframe_sampling, process_nans
 
-def sample_beta_VAE_alone(args,k=0): 
+def sample_beta_VAE_alone(args,beta, k=0): 
     
     print("\n\nSampling beta-VAE model on raw data\n\n")
 
@@ -15,7 +15,6 @@ def sample_beta_VAE_alone(args,k=0):
     ### Parameters ###
     ##################
     
-    beta = args.beta
     if float(beta)%1==0:
         if (type(beta)==str):
             beta = beta.split(".0")[0]
