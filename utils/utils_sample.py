@@ -55,23 +55,11 @@ def get_normalizer_num(
             subsample=int(1e9),
             random_state=seed,
         )
-        # noise = 1e-3
-        # if noise > 0:
-        #     assert seed is not None
-        #     stds = np.std(X_train, axis=0, keepdims=True)
-        #     noise_std = noise / np.maximum(stds, noise)  # type: ignore[code]
-        #     X_train = X_train + noise_std * np.random.default_rng(seed).standard_normal(
-        #         X_train.shape
-        #     )
     else:
         raise(f'Unknown normalization {normalization}')
 
     normalizer.fit(X_training)
     return normalizer.inverse_transform
-    # if return_normalizer:
-    #     return {k: normalizer.transform(v) for k, v in X_training.items()}, normalizer
-    # return {k: normalizer.transform(v) for k, v in X_training.items()}
-
 
 def get_categories_inverse(X_training: np.ndarray):
     unknown_value = np.iinfo('int64').max - 3
@@ -112,6 +100,6 @@ def bins_to_values(data_generated: pd.DataFrame, data_train: pd.DataFrame, inver
         values = np.array([a for a in inverse_dict.keys()])
         res = []
         for val in data_generated[name]:
-            res.append(np.min(values[values<val]))
+            res.append(inverse_dict[np.max(values[values<val])])
         data_generated[name] = res
     return data_generated
