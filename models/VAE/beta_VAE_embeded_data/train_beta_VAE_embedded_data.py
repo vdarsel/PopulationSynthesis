@@ -37,7 +37,7 @@ def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
     return mse_loss, ce_loss, loss_kld, acc
 
 
-def train_beta_VAE_from_embedded_data(args,k):
+def train_beta_VAE_from_embedded_data(args, beta, dim):
 
     print("\n\nTraining beta-VAE on embedded data\n\n")
 
@@ -47,7 +47,6 @@ def train_beta_VAE_from_embedded_data(args,k):
 
     device = args.device
     
-    beta = args.beta
     if beta%1==0:
         beta_str = str(beta).split(".0")[0]
     else:
@@ -74,7 +73,7 @@ def train_beta_VAE_from_embedded_data(args,k):
     validation_z = (validation_z - mean) / 2 #center dat on 0 with the same range
     validation_data = validation_z
     validation_data = torch.tensor(validation_data).to(device)
-    path_time = f'ckpt/{args.folder_save}/training_time_beta_VAE_{beta_str}_{k}.txt'
+    path_time = f'ckpt/{args.folder_save}/training_time_beta_VAE_{beta_str}_{dim}.txt'
 
     train_loader = DataLoader(
         train_data,
@@ -88,7 +87,7 @@ def train_beta_VAE_from_embedded_data(args,k):
     ### Initiate Model ###
     ######################
     
-    model = Beta_VAE_Embedded_data(in_dim, beta, k).to(device)
+    model = Beta_VAE_Embedded_data(in_dim, beta, dim).to(device)
     
     num_params = sum(p.numel() for p in model.parameters())
     print("Number of parameters", num_params)
@@ -101,7 +100,7 @@ def train_beta_VAE_from_embedded_data(args,k):
     ###################
     
     model.train()
-    torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{k}.pt')
+    torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{dim}.pt')
 
     best_loss = float('inf')
     current_lr = optimizer.param_groups[0]['lr']
@@ -150,7 +149,7 @@ def train_beta_VAE_from_embedded_data(args,k):
             if curr_loss < best_loss:
                 best_loss = curr_loss.item()
                 patience = 0
-                torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{k}.pt')
+                torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{dim}.pt')
             else:
                 patience += 1
                 if patience == args.beta_VAE_embedded_data.patience_max:
