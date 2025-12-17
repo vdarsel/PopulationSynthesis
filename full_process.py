@@ -9,7 +9,7 @@ from conf_fctn import odict,dict2namespace
 from model_launcher import *
 
 from evaluation.evaluation_from_parameters import full_evaluation
-
+from evaluation.scores_comparison import scores_comparison
 
 if __name__ == '__main__':
 
@@ -63,7 +63,6 @@ if __name__ == '__main__':
         setattr(config, key, val)
         
     setattr(config,"folder_save",config.folder_save_start+config.folder_save_end)
-    # setattr(config,"filename",config.filename_start.split(".csv")[0]+config.filename_end+".csv")
     setattr(config,"variable",args.variable)
     setattr(config,"str_float", str_float)
 
@@ -124,7 +123,12 @@ if __name__ == '__main__':
 
     for model in models:
         print(f"\n\n***Current Model: {model.terminaison_saving()}**\n\n")
-        model.train_if_needed(config)
+        if (not args.no_training):
+            model.train_if_needed(config)
         model.sample(config)
         if (not args.no_evaluation):
             full_evaluation(config, model.terminaison_saving())
+            
+    if (not args.no_evaluation):
+        print(f"\n\n***Score Comparison**\n")
+        scores_comparison(config, models)
