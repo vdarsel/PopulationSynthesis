@@ -60,16 +60,16 @@ def MCMC_frequentist_learn_sample(args):
     term = "_MCMC"
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     attr_setname = args.attributes_setname
     n_sample = args.n_generation
 
     info_path = f'{datapath}/{dataname}/{infoname}'
     
-    dataset_path = f'{datapath}/{dataname}/{filename}'
+    dataset_path = f'{datapath}/{dataname}/{filename_training}'
         
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(args.filename.split('.'))
+    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split('.'))
 
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
     sampling_file = f'{folder_sampling}/{filename_sampling}'
@@ -85,8 +85,8 @@ def MCMC_frequentist_learn_sample(args):
     info = pd.read_csv(info_path, sep = ";")
     info = info[info[attr_setname]][["Type", "Variable_name", "Bin_size"]]
     
-    name_cat = info[info["Type"].isin(["binary","cat","bool"])].reset_index()["Variable_name"]
-    name_num = info[info["Type"].isin(["cont","int","float"])].reset_index()["Variable_name"]
+    name_cat = info[info["Type"].isin(["binary","category","boolean"])].reset_index()["Variable_name"]
+    name_num = info[info["Type"].isin(["int","float"])].reset_index()["Variable_name"]
     
     df_data = pd.read_csv(dataset_path, sep=";", low_memory=False)[info["Variable_name"]].astype(str)
     
