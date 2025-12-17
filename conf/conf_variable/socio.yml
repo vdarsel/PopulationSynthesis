@@ -1,0 +1,14 @@
+gpu: 0  
+# put -1 to force using cpu, otherwise the number of the corresponding gpu in conda (see torch.cuda.list_gpu_processes()) 
+
+dataname: "French_Census_Data_2021"
+dataset_evaluation: "French_Census_Data_2021"
+
+infoname: "info.csv"
+
+sample_folder: "results/Generated_data"
+sampling_terminaison: "_socio"
+
+folder_save_start: "French_Census_Data_2021_Socio_set_" #"Rescencement_2015_Basic_1%_bis"
+
+attributes_setname: "Socio_set"  #possible values Basic_set	Socio_set	Extended_set Semi_Extended_set
