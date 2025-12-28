@@ -1,0 +1,118 @@
+filename_training: "training_dataset_Individual_0_03.csv"
+filename_test: "testing_dataset_Individual_0_03.csv"
+filename_test_WDCR: "testing_dataset_Individual_0_03_equal_size_training.csv"
+
+folder_save_end: "0_03%"
+
+##########################
+### Data preprocessing ###
+##########################
+
+transform:
+  num_normalization: "quantile"   # possible values "quantile", "standard", "minmax"
+  num_nan_policy: 'mean'
+  cat_nan_policy: 'drop-rows'
+  cat_encoding : null
+  cat_min_frequency : null
+  cat_min_count : 1
+  cat_too_small_policy: "cut"
+
+transform_statistical:
+  bins_num: 25
+
+##########################################
+############ Model Parameters ############
+##########################################
+
+
+########################
+### MCMC Frequentist ###
+########################
+
+MCMC_frequentist:
+  warm_up: 10000
+  thinning: 10
+
+#####################
+### MCMC Bayesian ###
+#####################
+
+MCMC_Bayesian:
+  warm_up: 10000
+  thinning: 10
+
+#######################
+### Transformer VAE ###
+#######################
+Transformer_VAE:
+  min_beta: 1.e-5
+  max_beta: 1.e-2
+  lambd: 0.7
+  num_epochs: 4000
+
+  learning_rate : 1.e-3
+  weight_decay_coef : 0
+  dimension_token: 4
+
+  number_heads: 1
+  factor : 32 #multiplicator between token dimension and the hidden layer in the transformer
+  n_layers: 2 # number of transformer layers
+
+  batch_size : 256
+
+  ## Preembedding parameters:
+  preembedding: null
+
+
+############
+### TVAE ###
+############
+
+TVAE:
+  n_epochs: 10000
+  batch_size: 256
+  patience_max: 50
+
+################
+### Beta VAE ###
+################
+
+beta_VAE:
+  n_epochs: 10000
+  batch_size: 256
+  patience_max: 50
+
+##########################
+### Beta VAE embedding ###
+##########################
+
+beta_VAE_embedded_data:
+  n_epochs: 10000
+  batch_size: 256
+  patience_max: 50
+
+############
+### WGAN ###
+############
+
+WGAN:
+  batch_size: 256
+  n_epochs_Discriminator: 10 # Train Discriminator alone in the first epoch to have a discriminator able to disciminate better than random
+  n_epochs: 1000 # There is no score on validation, x epochs are performed to get the model
+  freq_train_G: 5 # train the generator network each x epoch. The discriminative network is trained at each epoch
+
+###############################
+### Diffusion Embedded data ###
+###############################
+
+Diffusion_embedded:
+  n_epochs: 10000
+  batch_size: 256
+  patience_max: 50
+
+###############################################
+############ Generation parameters ############
+###############################################
+
+batch_size_generation: 1024
+n_generation: 102400
