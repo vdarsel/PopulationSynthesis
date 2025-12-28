@@ -16,7 +16,7 @@ def get_rate_of_impossible_combinations(df_generated, df_info, prop_ori, prop_ge
     
     df_info : pd.DataFrame
         A DataFrame containing metadata or additional information about the dataset.
-        Specifically, it includes geographic attributes under the "Geo" column.
+        Specifically, it includes geographic attributes under the "Geographical_attribute" column.
     
     prop_ori : np.array
         An array representing the proportions of each combination in the original dataset.
@@ -52,7 +52,7 @@ def get_rate_of_impossible_combinations(df_generated, df_info, prop_ori, prop_ge
     prob_values = values[(prop_ori==0)&(prop_gen!=0)].astype(str)
 
     columns_list = columns.to_numpy()
-    geo_array = df_info["Geo"].to_numpy()
+    geo_array = df_info["Geographical_attribute"].to_numpy()
     prob_cols = columns_list[prob_combs.astype(int)]
     prob_combs_unique = np.unique(prob_combs.astype(int), axis = 0)
     has_geo = geo_array[prob_combs_unique.astype(int)].any(1)

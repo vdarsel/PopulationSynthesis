@@ -90,20 +90,26 @@ def full_evaluation(args, term_evaluation=""):
     
     dir_path_generated_data = f"{args.sample_folder}/{args.folder_save+term_evaluation}"
     
-    dir_path_save_results = f"{dir_path_generated_data}/{args.dataset_evaluation}"
+    dir_path_evaluation_generated_data = f"{dir_path_generated_data}/{args.dataset_evaluation}"
     
     datapath = "Data"
     
-    if not os.path.isdir(dir_path_save_results):
-        os.makedirs(dir_path_save_results)
+    filename_training = args.filename_training
+    
+    if not os.path.isdir(dir_path_evaluation_generated_data):
+        os.makedirs(dir_path_evaluation_generated_data)
     n_samples = args.n_generation
     
-    filename_sampling = args.filename.split(".")[0]+(args.sampling_terminaison+"_"+str(n_samples)+term_evaluation)#.join(args.filename.split('.'))
+    filename_sampling = filename_training.split(".")[0]+(args.sampling_terminaison+"_"+str(n_samples)+term_evaluation)
     basename = f"{dir_path_generated_data}/{filename_sampling}"
-    basename_save = f"{dir_path_save_results}/{args.filename.split(".csv")[0]+args.sampling_terminaison}_{str(args.n_generation)+term_evaluation}"
+    folder_proportion_file_generated_data = f"{dir_path_evaluation_generated_data}/Proportion_save/"
+    if not os.path.isdir(folder_proportion_file_generated_data):
+        os.makedirs(folder_proportion_file_generated_data)
+    basename_save = f"{folder_proportion_file_generated_data}/{filename_training.split(".csv")[0]+args.sampling_terminaison}_{str(args.n_generation)+term_evaluation}"
     file_test = f"{datapath}/{args.dataset_evaluation}/{args.filename_test.split(".csv")[0]+args.special_model+".csv"}"
-    file_train = f"{datapath}/{args.dataname}/{args.filename}"
-
+    file_test_WDCR = f"{datapath}/{args.dataset_evaluation}/{args.filename_test_WDCR.split(".csv")[0]+args.special_model+".csv"}"
+    file_train = f"{datapath}/{args.dataname}/{filename_training}"
+        
     ########################
     ### Initiate results ###
     ########################
@@ -132,20 +138,21 @@ def full_evaluation(args, term_evaluation=""):
     df_info = df_info[df_info[args.attributes_setname]]
 
     columns = df_info["Variable_name"]
-    columns_without_geo = df_info[(~df_info["Geo"])]["Variable_name"]
+    columns_without_geo = df_info[(~df_info["Geographical_attribute"])]["Variable_name"]
 
-    idx_num = np.arange(len(df_info))[(df_info["Type"].isin(["int","cont", "float"]))]
-    name_cat = df_info["Variable_name"][(df_info["Type"].isin(["binary","cat","bool","category"]))].to_list()
+    idx_num = np.arange(len(df_info))[(df_info["Type"].isin(["int","float"]))]
+    name_cat = df_info["Variable_name"][(df_info["Type"].isin(["binary","boolean","category"]))].to_list()
 
-    dataset_train = pd.read_csv(file_train, sep=";", index_col="Original_index", low_memory=False)[df_info["Variable_name"]]
+    dataset_train = pd.read_csv(file_train, sep=";", low_memory=False)[df_info["Variable_name"]]
 
-    for idx in df_info[df_info["Type"].isin(["cat"])]["Variable_name"]:
+    for idx in df_info[df_info["Type"].isin(["category"])]["Variable_name"]:
         dataset_train[idx] = dataset_train[idx].astype(str)
     dataset_train = dataset_train[columns]
 
-    dataset_test = pd.read_csv(file_test, sep=";", index_col="Original_index", low_memory=False)
+    dataset_test = pd.read_csv(file_test, sep=";", low_memory=False)
+    dataset_test_WDCR = pd.read_csv(file_test_WDCR, sep=";", low_memory=False)
 
-    for idx in df_info[(df_info["Type"].isin(["cat"]))]["Variable_name"]:
+    for idx in df_info[(df_info["Type"].isin(["category"]))]["Variable_name"]:
         dataset_test[idx] = dataset_test[idx].astype(str)
     dataset_test = dataset_test[columns]
 
@@ -160,19 +167,19 @@ def full_evaluation(args, term_evaluation=""):
     
     df_sample = pd.read_csv(f'{basename}.csv', sep=";")
 
-    for col in df_info[(df_info["Type"].isin(["cat"]))]["Variable_name"]:
+    for col in df_info[(df_info["Type"].isin(["category"]))]["Variable_name"]:
         df_sample[col] = df_sample[col].astype(str)
     df_sample = df_sample[columns]
     
     if (args.dataset_evaluation!=args.dataname): 
         # For future functionalities
-        folder_test_file = f"results/{args.attributes_setname}/{args.dataset_evaluation}/{args.dataname}"
-        name_test_file_distribution = f"Proportion_test_data_distribution_{args.dataset_evaluation}_reference_data_{args.dataname}_{(args.filename).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
-        name_test_file_realism = f"Proportion_test_data_realism_{args.dataset_evaluation}_reference_data_{args.dataname}_{(args.filename).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        folder_test_file = f"results/Proportion_save/{args.attributes_setname}/{args.dataset_evaluation}/{args.dataname}"
+        name_test_file_distribution = f"Proportion_test_data_distribution_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        name_test_file_realism = f"Proportion_test_data_realism_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
     else:
-        folder_test_file = f"results/{args.attributes_setname}/{args.dataname}/{args.dataname}"
-        name_test_file_distribution = f"Proportion_reference_data_distribution_{args.dataname}_{(args.filename).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
-        name_test_file_realism = f"Proportion_reference_data_realism_{args.dataname}_{(args.filename).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        folder_test_file = f"results/Proportion_save/{args.attributes_setname}/{args.dataname}/{args.dataname}"
+        name_test_file_distribution = f"Proportion_reference_data_distribution_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        name_test_file_realism = f"Proportion_reference_data_realism_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
 
     ######################################
     ### Evaluation of the distribution ###
@@ -183,10 +190,10 @@ def full_evaluation(args, term_evaluation=""):
         proportion_file = f"{basename_save_distribution}_{i}.npy"
         dataset_test_numpy_distribution = np.copy(dataset_test_numpy)
         dataset_generated_distribution = df_sample.to_numpy()
-        bins_distribution = df_info["Bin_distribution"].to_list()
-        for j in idx_num:
-            dataset_test_numpy_distribution[:,j] = (dataset_test_numpy_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
-            dataset_generated_distribution[:,j] = (dataset_generated_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
+        # bins_distribution = df_info["Bin_distribution"].to_list()
+        # for j in idx_num:
+        #     dataset_test_numpy_distribution[:,j] = (dataset_test_numpy_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
+        #     dataset_generated_distribution[:,j] = (dataset_generated_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
         if (not os.path.isfile(proportion_file)):
             print("\nGenerate Proportion file for sample (distribution)")
             generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_generated_distribution,i, '.', basename_save_distribution,False)
@@ -202,10 +209,10 @@ def full_evaluation(args, term_evaluation=""):
         combi_test = np.load(combi_test_file)
         values_test = np.load(value_test_file, allow_pickle=True)
         df_scores_by_cat = get_df_scores_by_cat(proportion,proportion_test,combi_test,i)
-        df_scores_by_cat.to_csv(f"{dir_path_save_results}/scores_by_cat_{i}.csv", sep=";")
-        generate_histogram(df_scores_by_cat, dir_path_save_results, i)
-        generate_plot(proportion, proportion_test, dir_path_save_results, i)
-        generate_plot_plotly(proportion, proportion_test, combi_test, values_test, columns.to_numpy(),dir_path_save_results, i)
+        df_scores_by_cat.to_csv(f"{dir_path_evaluation_generated_data}/scores_by_cat_{i}.csv", sep=";")
+        generate_histogram(df_scores_by_cat, dir_path_evaluation_generated_data, i)
+        generate_plot(proportion, proportion_test, dir_path_evaluation_generated_data, i)
+        generate_plot_plotly(proportion, proportion_test, combi_test, values_test, columns.to_numpy(),dir_path_evaluation_generated_data, i)
         df_scores_median.loc[dict_title[i]] =  df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].median()
         df_scores_mean.loc[dict_title[i]] = df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].mean()
         df_scores_agg.loc[dict_title[i]] = pd.Series(get_scores_agg(proportion_test,proportion),index=["SRMSE","Hellinger","Pearson","R2"])
@@ -219,11 +226,6 @@ def full_evaluation(args, term_evaluation=""):
         basename_save_realism = f"{basename_save}_realism"
         proportion_file = f"{basename_save_realism}_{i}.npy"
         dataset_generated_realism = df_sample.to_numpy()
-        dataset_numpy_realism = np.concatenate([dataset_test_numpy, dataset_train_numpy],0)
-        bins_realism = df_info["Bin_realism"].to_list()
-        for j in idx_num:
-            dataset_numpy_realism[:,j] = (dataset_numpy_realism[:,j]//bins_realism[j])*bins_realism[j]
-            dataset_generated_realism[:,j] = (dataset_generated_realism[:,j]//bins_realism[j])*bins_realism[j]
         if (not os.path.isfile(proportion_file)):
             print("\nGenerate Proportion file for sample (realism)")
             generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_generated_realism,i, '.', basename_save_realism,False)
@@ -245,11 +247,11 @@ def full_evaluation(args, term_evaluation=""):
     ### Evaluation of the privacy ###
     #################################
 
-    if (not os.path.isfile(f"{dir_path_save_results}/dcr.csv")):
-        df_DCR = Distance_to_Closest_Records(df_sample,dataset_train,dataset_test, df_info.reset_index(), f"{folder_test_file}/{name_test_file_distribution}")
-        df_DCR.to_csv(f"{dir_path_save_results}/dcr.csv", sep=";",index=False)
-    df_DCR = pd.read_csv(f"{dir_path_save_results}/dcr.csv", sep=";")
-    generate_histogram_DCR(df_DCR, dir_path_save_results)
+    if (not os.path.isfile(f"{dir_path_evaluation_generated_data}/dcr.csv")):
+        df_DCR = Distance_to_Closest_Records(df_sample,dataset_train,dataset_test_WDCR, df_info.reset_index(), f"{folder_test_file}/{name_test_file_distribution}")
+        df_DCR.to_csv(f"{dir_path_evaluation_generated_data}/dcr.csv", sep=";",index=False)
+    df_DCR = pd.read_csv(f"{dir_path_evaluation_generated_data}/dcr.csv", sep=";")
+    generate_histogram_DCR(df_DCR, dir_path_evaluation_generated_data)
     Wasserstein_distance_DCR = np.sqrt(1/(len(df_DCR)**2)*np.sum(np.power(df_DCR["DCR train"].sort_values().values - df_DCR["DCR test"].sort_values().values,2)))
         
     ############################
@@ -290,4 +292,4 @@ def full_evaluation(args, term_evaluation=""):
         Ser_review["Rate of copies (in testing not in training, without geo)"] = f'{val:.2%}'
     Ser_review["Wasserstein-DCR"] = Wasserstein_distance_DCR
 
-    Ser_review.rename(f"{args.attributes_setname}_{args.folder_save_end}{term_evaluation}").to_csv(f"{dir_path_save_results}/overview_score.csv", sep=";", index_label="Metric")
+    Ser_review.rename(f"{args.attributes_setname}_{args.folder_save_end}{term_evaluation}").to_csv(f"{dir_path_evaluation_generated_data}/overview_score.csv", sep=";", index_label="Metric")
