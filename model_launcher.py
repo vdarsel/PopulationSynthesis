@@ -30,10 +30,10 @@ from models.Monte_Carlo_Markov_Chain.Frequentist.MCMC_frequentist import MCMC_fr
 
 from models.Monte_Carlo_Markov_Chain.Bayesian.MCMC_Bayesian import MCMC_Bayesian_learn_sample
 
-
+from models.Direct_Inflating.Direct_Inflating import train_sample_Direct_Inflating
 
 def learn_transformer_vae_if_needed(config):
-    if (not os.path.isfile(f"ckpt/{config.save_folder}/model_Transformer_VAE.pt")):
+    if (config.force_training_embedding) or (not os.path.isfile(f"ckpt/{config.folder_save}/train_z.npy")):
         learn_encoding_Transformer_VAE(config)
 
 
@@ -47,7 +47,7 @@ class Model_for_Population_Synthesis:
     def sample(self, config):
         pass
     
-    def terminaison_saving(self):    
+    def termination_saving(self):    
         pass
 
 
@@ -63,15 +63,15 @@ class Diffusion_model(Model_for_Population_Synthesis):
     def train_if_needed(self, config):
         learn_transformer_vae_if_needed(config)
         
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/model_diffusion_{self.dim}.pt")):
-            train_Diffusion_from_embedded_data(config)
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
+            train_Diffusion_from_embedded_data(config, self.dim)
     
     def sample(self, config):
         sample_Diffusion_from_embedded_data(config, self.dim)
         
-        decode_Transformer_VAE(config,self.terminaison_saving())
+        decode_Transformer_VAE(config,self.termination_saving())
 
-    def terminaison_saving(self):    
+    def termination_saving(self):    
         return f"_diffusion_{self.dim}"
     
 
@@ -88,16 +88,16 @@ class beta_VAE_embedding(Model_for_Population_Synthesis):
     def train_if_needed(self, config):
         learn_transformer_vae_if_needed(config) 
     
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/model_vae_embedded_data_{self.beta}_{self.dim}.pt")):
-            train_beta_VAE_from_embedded_data(config, self.beta, self.dim)
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
+            train_beta_VAE_from_embedded_data(config, self.beta, self.termination_saving(), self.dim)
         
     def sample(self, config):
-        sample_beta_VAE_from_embedded_data(config, self.beta, self.dim)
+        sample_beta_VAE_from_embedded_data(config, self.beta, self.termination(), self.dim)
         
-        decode_Transformer_VAE(config,self.terminaison_saving())
+        decode_Transformer_VAE(config,self.termination_saving())
 
-    def terminaison_saving(self):    
-        return f"_VAE_beta_{self.beta}_{self.dim}"
+    def termination_saving(self):    
+        return f"_beta_VAE_(embedding)_beta_{f"{self.beta}".replace(".","_")}_{self.dim}"
         
     
 class beta_VAE(Model_for_Population_Synthesis):
@@ -106,14 +106,14 @@ class beta_VAE(Model_for_Population_Synthesis):
         self.dim = dim
     
     def train_if_needed(self, config):
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/model_beta_VAE_{self.beta}_{self.dim}.pt")):
-            train_beta_VAE_alone(config, self.beta, self.dim)
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
+            train_beta_VAE_alone(config, self.beta, self.termination_saving(),  self.dim)
         
     def sample(self, config):
-        sample_beta_VAE_alone(config, self.beta, self.dim)
+        sample_beta_VAE_alone(config, self.beta, self.termination_saving(), self.dim)
         
-    def terminaison_saving(self):
-        return f"_beta_VAE_beta_{self.beta}_{self.dim}"
+    def termination_saving(self):
+        return f"_beta_VAE_beta_{f"{self.beta}".replace(".","_")}_{self.dim}"
 
 class TVAE(Model_for_Population_Synthesis):
     def __init__(self, beta, dim):
@@ -121,14 +121,14 @@ class TVAE(Model_for_Population_Synthesis):
         self.dim = dim
 
     def train_if_needed(self, config):
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/encoder_TVAE_dim_{self.dim}_beta_{self.beta}.pt")):
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/encoder_TVAE_dim_{self.dim}_beta_{f"{self.beta}".replace(".","_")}.pt")):
             train_TVAE(config, self.beta, self.dim)
     
     def sample(self, config):
-        sample_TVAE(config, self.beta, self.dim)
+        sample_TVAE(config, self.beta, self.termination_saving(), self.dim)
     
-    def terminaison_saving(self):
-        return f"_TVAE_beta_{self.beta}_{self.dim}"
+    def termination_saving(self):
+        return f"_TVAE_beta_{f"{self.beta}".replace(".","_")}_{self.dim}"
 
 #####################################################
 ###                     GAN                       ###
@@ -140,29 +140,29 @@ class WGAN_embedding(Model_for_Population_Synthesis):
     
     def train_if_needed(self, config):
         learn_transformer_vae_if_needed(config)
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/discriminator_WGAN_embedded_data_{self.dim}.pt")):
-            train_WGAN_embedding_data(config, self.dim)
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/discriminator{self.termination_saving()}.pt")):
+            train_WGAN_embedding_data(config, self.termination_saving(), self.dim)
             
     def sample(self, config):
-        sample_WGAN_embedding_data(config, self.dim)
-        decode_Transformer_VAE(config,self.terminaison_saving())
+        sample_WGAN_embedding_data(config, self.termination_saving(), self.dim)
+        decode_Transformer_VAE(config,self.termination_saving())
     
-    def terminaison_saving(self):
-        return f"_WGAN_{self.dim}"
+    def termination_saving(self):
+        return f"_WGAN_(embedding)_{self.dim}"
 
 class WGAN(Model_for_Population_Synthesis):
     def __init__(self, dim):
         self.dim = dim
         
     def train_if_needed(self, config):
-        if (not os.path.isfile(f"ckpt/{config.save_folder}/discriminator_WGAN_{self.dim}.pt")):
-            train_WGAN_alone(config, self.dim)
+        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/discriminator{self.termination_saving()}.pt")):
+            train_WGAN_alone(config, self.termination_saving(), self.dim)
     
     def sample(self, config):
-        sample_WGAN_alone(config, self.dim)
+        sample_WGAN_alone(config, self.termination_saving(), self.dim)
 
-    def terminaison_saving(self):
-        return f"_WGAN_no_embed_{self.dim}"
+    def termination_saving(self):
+        return f"_WGAN_{self.dim}"
 
 #####################################################
 ###                    MCMC                       ###
@@ -171,15 +171,17 @@ class WGAN(Model_for_Population_Synthesis):
 class MCMC_frequentist(Model_for_Population_Synthesis):
     def sample(self, config):
         MCMC_frequentist_learn_sample(config)
-    def terminaison_saving(self):
+    def termination_saving(self):
         return "_MCMC"
 
 
 class MCMC_Bayesian(Model_for_Population_Synthesis):
+    def __init__(self, alpha):
+        self.alpha = alpha
     def sample(self, config):
-        MCMC_Bayesian_learn_sample(config)
-    def terminaison_saving(self):
-        return "_MCMC_Bayesian"
+        MCMC_Bayesian_learn_sample(config, self.alpha, self.termination_saving())
+    def termination_saving(self):
+        return f"_MCMC_Bayesian_{f"{self.alpha}".replace(".","_")}"
 
 #####################################################
 ###              Bayesian Network                 ###
@@ -188,12 +190,24 @@ class MCMC_Bayesian(Model_for_Population_Synthesis):
 class Bayesian_Network_hill(Model_for_Population_Synthesis):
     def sample(self, config):
         train_sample_BN_hill_climb(config)
-    def terminaison_saving(self):
+    def termination_saving(self):
         return "_Bayesian_Network_Hill_Climb"
 
 
 class Bayesian_Network_tree(Model_for_Population_Synthesis):
     def sample(self, config):
         train_sample_BN_tree(config)
-    def terminaison_saving(self):
+    def termination_saving(self):
         return "_Bayesian_Network_Tree"
+    
+    
+#####################################################
+###              Direct Inflating                 ###
+#####################################################
+
+class Direct_Inflating(Model_for_Population_Synthesis):
+    def sample(self, config):
+        train_sample_Direct_Inflating(config)
+    def termination_saving(self):
+        return "_Direct_Inflating"
+    

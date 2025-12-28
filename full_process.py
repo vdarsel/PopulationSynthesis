@@ -19,7 +19,7 @@ if __name__ == '__main__':
     parser.add_argument('--size_data', type=float, required=False, default=1)
     
     parser.add_argument("--Diffusion", action='store_true')
-    parser.add_argument("--TVAE", action='store_true')
+    # parser.add_argument("--TVAE", action='store_true')
     parser.add_argument("--WGAN", action='store_true')
     parser.add_argument("--WGAN_embedded", action='store_true')
     parser.add_argument("--beta_VAE", action='store_true')
@@ -28,27 +28,34 @@ if __name__ == '__main__':
     parser.add_argument("--BN_tree", action='store_true')
     parser.add_argument("--MCMC_frequence", action='store_true')
     parser.add_argument("--MCMC_Bayesian", action='store_true')
+    parser.add_argument("--Direct_Inflating", action='store_true')
     
     
     parser.add_argument("--no_evaluation", action='store_true')
+    parser.add_argument("--no_sampling", action='store_true')
+    parser.add_argument("--force_training", action='store_true')
+    parser.add_argument("--force_training_embedding", action='store_true')
     
     parser.add_argument("--Diffusion_dim", type=int, default=2000)
-    parser.add_argument("--TVAE_dim", type=int, default=2000)
-    parser.add_argument("--TVAE_beta", type=int, default=1)
+    # parser.add_argument("--TVAE_dim", type=int, default=2000)
+    # parser.add_argument("--TVAE_beta", type=float, default=1)
     parser.add_argument("--beta_VAE_dim", type=int, default=2000)
-    parser.add_argument("--beta_VAE_beta", type=int, default=1)
+    parser.add_argument("--beta_VAE_beta", type=float, default=1)
     parser.add_argument("--beta_VAE_embedded_dim", type=int, default=2000)
-    parser.add_argument("--beta_VAE_embedded_beta", type=int, default=1)
+    parser.add_argument("--beta_VAE_embedded_beta", type=float, default=1)
     parser.add_argument("--WGAN_dim", type=int, default=2000)
     parser.add_argument("--WGAN_embedded_dim", type=int, default=2000)
+    parser.add_argument("--MCMC_Bayesian_alpha", type=float, default=0.1)
     
 
     args = odict(vars(parser.parse_args()))
-    # print(args)
     
     with open(f"conf/conf_variable/{args.variable}.yml", "r") as f:
         config_ = yaml.safe_load(f)
     config = dict2namespace(config_)
+    
+    config.force_training_embedding = args.force_training_embedding
+    config.force_training = args.force_training
 
     if(args.size_data == int(args.size_data)):
         str_float = "_".join(str(args.size_data).split(".0")[0].split("."))
@@ -79,9 +86,9 @@ if __name__ == '__main__':
         model = Diffusion_model(args.Diffusion_dim)
         models.append(model)
 
-    if (args.TVAE):
-        model = TVAE(args.TVAE_beta, args.TVAE_dim)
-        models.append(model)
+    # if (args.TVAE):
+    #     model = TVAE(args.TVAE_beta, args.TVAE_dim)
+    #     models.append(model)
 
     if (args.beta_VAE):
         model = beta_VAE(args.beta_VAE_beta, args.beta_VAE_dim)
@@ -96,7 +103,7 @@ if __name__ == '__main__':
         models.append(model)
 
     if (args.WGAN_embedded):
-        model = WGAN(args.WGAN_embedded_dim)
+        model = WGAN_embedding(args.WGAN_embedded_dim)
         models.append(model)
         
     if(args.BN_hill):
@@ -112,22 +119,26 @@ if __name__ == '__main__':
         models.append(model)
         
     if(args.MCMC_Bayesian):
-        model = MCMC_Bayesian()
+        model = MCMC_Bayesian(args.MCMC_Bayesian_alpha)
+        models.append(model)
+        
+    if(args.Direct_Inflating):
+        model = Direct_Inflating()
         models.append(model)
         
         
     print("\n\n\n***************List of models***************")
     for model in models:
-        print(model.terminaison_saving())
+        print(model.termination_saving())
     print("********************************************\n\n\n")
 
     for model in models:
-        print(f"\n\n***Current Model: {model.terminaison_saving()}**\n\n")
-        if (not args.no_training):
-            model.train_if_needed(config)
-        model.sample(config)
+        print(f"\n\n***Current Model: {model.termination_saving()}**\n\n")
+        model.train_if_needed(config)
+        if (not args.no_sampling):
+            model.sample(config)
         if (not args.no_evaluation):
-            full_evaluation(config, model.terminaison_saving())
+            full_evaluation(config, model.termination_saving())
             
     if (not args.no_evaluation):
         print(f"\n\n***Score Comparison**\n")
