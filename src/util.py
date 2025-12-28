@@ -20,7 +20,6 @@ import tomli
 import tomli_w
 import torch
 import zero
-import typing as ty
 
 from . import env
 

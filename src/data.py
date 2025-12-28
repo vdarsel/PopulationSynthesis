@@ -14,13 +14,11 @@ import sklearn.preprocessing
 from scipy.stats import norm
 import torch
 import os
-from category_encoders import LeaveOneOutEncoder
 from sklearn.impute import SimpleImputer
 from sklearn.preprocessing import StandardScaler
 from scipy.spatial.distance import cdist
 
 from . import env, util
-from .metrics import calculate_metrics as calculate_metrics_
 from .util import TaskType, load_json
 
 ArrayDict = Dict[str, np.ndarray]
@@ -77,8 +75,8 @@ class Dataset:
             }
 
         info = pd.read_csv(dir_ / 'info.csv', sep=";")
-        idx_cat = info["Variable_name"][info["Type"].isin(["binary","cat","bool"])]
-        idx_num = info["Variable_name"][info["Type"].isin(["int","cont"])]
+        idx_cat = info["Variable_name"][info["Type"].isin(["binary","category","bool"])]
+        idx_num = info["Variable_name"][info["Type"].isin(["int","float"])]
 
         data = load()
 
@@ -103,52 +101,6 @@ class Dataset:
     def get_category_sizes(self, part: str) -> List[int]:
         return [] if self.X_cat is None else get_category_sizes(self.X_cat[part])
 
-    # def calculate_metrics(
-    #     self,
-    #     predictions: Dict[str, np.ndarray],
-    #     prediction_type: Optional[str],
-    # ) -> Dict[str, Any]:
-    #     metrics = {
-    #         x: calculate_metrics_(
-    #             self.y[x], predictions[x], self.task_type, prediction_type, self.y_info
-    #         )
-    #         for x in predictions
-    #     }
-    #     if self.task_type == TaskType.REGRESSION:
-    #         score_key = 'rmse'
-    #         score_sign = -1
-    #     else:
-    #         score_key = 'accuracy'
-    #         score_sign = 1
-    #     for part_metrics in metrics.values():
-    #         part_metrics['score'] = score_sign * part_metrics[score_key]
-    #     return metrics
-
-# def change_val(dataset: Dataset, val_size: float = 0.2):
-#     # should be done before transformations
-
-#     y = np.concatenate([dataset.y['train'], dataset.y['val']], axis=0)
-
-#     ixs = np.arange(y.shape[0])
-#     if dataset.is_regression:
-#         train_ixs, val_ixs = train_test_split(ixs, test_size=val_size, random_state=777)
-#     else:
-#         train_ixs, val_ixs = train_test_split(ixs, test_size=val_size, random_state=777, stratify=y)
-
-#     dataset.y['train'] = y[train_ixs]
-#     dataset.y['val'] = y[val_ixs]
-
-#     if dataset.X_num is not None:
-#         X_num = np.concatenate([dataset.X_num['train'], dataset.X_num['val']], axis=0)
-#         dataset.X_num['train'] = X_num[train_ixs]
-#         dataset.X_num['val'] = X_num[val_ixs]
-
-#     if dataset.X_cat is not None:
-#         X_cat = np.concatenate([dataset.X_cat['train'], dataset.X_cat['val']], axis=0)
-#         dataset.X_cat['train'] = X_cat[train_ixs]
-#         dataset.X_cat['val'] = X_cat[val_ixs]
-
-#     return dataset
 
 def num_process_nans(dataset: Dataset, policy: Optional[NumNanPolicy]) -> Dataset:
 
@@ -390,8 +342,6 @@ def transform_dataset(
     num_transform = None
     cat_transform = None
     X_num = dataset.X_num
-    print(np.unique(dataset.X_cat["train"].to_numpy()[:,1]))
-    print(np.unique(dataset.X_cat["train"]["educ_level"]))
     print("Initial categories (training):", [len(np.unique(dataset.X_cat["train"].to_numpy()[:,id])) for id in range(dataset.X_cat["train"].shape[1])])
 
     if X_num is not None and transformations.normalization is not None:
@@ -663,16 +613,13 @@ def concat_to_pd(X_num, X_cat, y):
             pd.DataFrame(y, columns=['y'])
         ], axis=1)
 
-def read_data(path, filename, idx_cat, idx_num):
+def read_data(path, filename, name_col_cat, name_col_num):
 
     data = pd.read_csv(os.path.join(path, filename), sep=";", low_memory=False)
-    X_num = data[idx_num]
-    X_cat = data[idx_cat]
+    X_num = data[name_col_num]
+    X_cat = data[name_col_cat]
 
     X_cat = X_cat.astype(str)
-    # print(data["educ_level"].nunique())
-    # print(data["educ_level"].unique())
-    # raise
 
     return X_num, X_cat
 

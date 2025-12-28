@@ -71,11 +71,11 @@ def preprocess(dataset_path, basename, idx_cat, idx_num, T_dict, inverse = False
 
     dataset = make_dataset(
         data_path = dataset_path,
-        file_basename= basename,
+        file_training= basename,
         T = T,
         change_val = False,
-        idx_cat = idx_cat,
-        idx_num = idx_num
+        name_cat = idx_cat,
+        name_num = idx_num
     )
     
 
@@ -133,27 +133,58 @@ def concat_y_to_X(X, y):
         return y.reshape(-1, 1)
     return np.concatenate([y.reshape(-1, 1), X], axis=1)
 
+def generate_train_validation_set(X_cat, validation_share = 0.2):
+    
+    validation_size = int((validation_share)*len(X_cat))
+    # training_size = int((1-validation_share)*len(X_cat))
+    is_in_idx_training = np.zeros(X_cat.shape[0], dtype=bool)
+    
+    idx = np.arange(X_cat.shape[0],dtype=int)
+
+    for j in range(X_cat.shape[1]):
+        np.random.shuffle(idx)
+        _, ind = np.unique(X_cat.iloc[idx,j], return_index=True) # with the randomizer, recover randomly one sample for each unique value for the training set (avoid having a missing sample)
+        is_in_idx_training[idx[ind]] = True
+    # idx_train = np.arange(X_cat.shape[0], dtype=int)[force_idx_training]
+    idx_remaining = np.arange(X_cat.shape[0], dtype=int)[~is_in_idx_training]
+    np.random.shuffle(idx_remaining)
+    
+    if (validation_size>len(idx_remaining)):
+        raise ValueError
+
+    is_in_idx_training[idx_remaining[validation_size:]] = True
+    
+    # idx_validation = idx_remaining[:validation_size]
+    # idx_to_add = idx_remaining[:training_size-len(idx_train)]
+    
+    # idx_train = np.concatenate([idx_train,idx_to_add])
+    # idx_validation = idx_remaining[training_size-len(idx_train):]
+    
+    return np.arange(X_cat.shape[0], dtype=int)[is_in_idx_training], np.arange(X_cat.shape[0], dtype=int)[~is_in_idx_training]
 
 def make_dataset(
     data_path: str,
-    file_basename: str,
+    file_training: str,
     T: src.Transformations,
     change_val: bool,
-    idx_cat: list,
-    idx_num: list,
+    name_cat: list,
+    name_num: list,
 ):
 
-    X_cat = {} if len(idx_cat)>0  else None
-    X_num = {} if len(idx_num)>0 else None
+    X_num = {} if len(name_num)>0 else None
+    X_cat = {} if len(name_cat)>0  else None
 
-    for split in ['train', 'validation']:
-        filename = f'_{split}.'.join(file_basename.split('.'))
-                
-        X_num_t, X_cat_t = src.read_data(data_path, filename, idx_cat, idx_num)
-        if X_num is not None:
-            X_num[split] = X_num_t
-        if X_cat is not None:
-            X_cat[split] = X_cat_t  
+    X_num_t, X_cat_t = src.read_data(data_path, file_training, name_cat, name_num)
+    
+    
+    idx_train, idx_validation = generate_train_validation_set(X_cat_t)
+    
+    if X_num is not None:
+        X_num["train"] = X_num_t.iloc[idx_train]
+        X_num["validation"] = X_num_t.iloc[idx_validation]
+    if X_cat is not None:
+        X_cat["train"] = X_cat_t.iloc[idx_train]
+        X_cat["validation"] = X_cat_t.iloc[idx_validation]
 
     D = src.Dataset(
         X_num,
