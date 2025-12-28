@@ -88,16 +88,17 @@ Two probabilistic models are implemented, each of them with two approaches.
 
 ### Bayesian Networks
 Bayesian Networks are implemented with two algorithms for generating the Directed Acyclic Graph (DAG):
-|Model              |Description                                                          |Flag                 | Result folder | Reference        |
+
+|Model              |Description                                                          |Flag                 | Reference        |
 |-------------------|---------------------------------------------------------------------|---------------------|-----------------|
-|Hill-Climbing      |Uses the BIC score to search for the optimal DAG, with hill-climbing.                    |```--BN_hill``` | Bayesian_           |  Koller & Friedman, Probabilistic Graphical Models - Principles and Techniques, 2009 Section 18.4.3 (page 811ff)               |
-|Tree Search        |Constructs a maximum-weight spanning tree using mutual information as edge weights.|```--BN_tree```            | Chow, C. K.; Liu, C.N. (1968), “Approximating discrete probability distributions with dependence trees”, IEEE Transactions on Information Theory, IT-14 (3): 462–467                |
+|Hill-Climbing      |Uses the BIC score to search for the optimal DAG, with hill-climbing.                    |```--BN_hill```     |  Koller & Friedman, Probabilistic Graphical Models - Principles and Techniques, 2009 Section 18.4.3 (page 811ff)               |
+|Tree Search        |Constructs a maximum-weight spanning tree using mutual information as edge weights.|```--BN_tree```           | Chow, C. K.; Liu, C.N. (1968), “Approximating discrete probability distributions with dependence trees”, IEEE Transactions on Information Theory, IT-14 (3): 462–467                |
 
 ### Monte Carlo Markov Chain
 
 MCMC uses Gibbs Sampling to generate synthetic populations. Two approaches are available for computing conditional probabilities:
 |Model              |Description                                                          |Flag                 | Options                 |
-|-------------------|---------------------------------------------------------------------|---------------------|
+|-------------------|---------------------------------------------------------------------|---------------------|-----------------|
 |Frequentist        |Transition probabilities are computed from observed frequencies.     |```--MCMC_freq```          | None |
 |Bayesian           |Uses the Bayesian Posterior of a Dirichlet distribution for transition probabilities.|```--MCMC_Baysian```      | ```--MCMC_Baysian_alpha``` for the Dirichlet prior  (default=0.1) |
 
