@@ -5,7 +5,7 @@ from tqdm import tqdm
 from utils.utils_train import get_input_embedded_training_data
 from models.VAE.beta_VAE_embeded_data.model_beta_VAE_embedded_data import Beta_VAE_Embedded_data
 
-def sample_beta_VAE_from_embedded_data(args, beta, k=0): 
+def sample_beta_VAE_from_embedded_data(args, beta, term, k=0): 
     
     print("\n\nSampling beta-VAE model on embedded data\n\n")
 
@@ -14,9 +14,7 @@ def sample_beta_VAE_from_embedded_data(args, beta, k=0):
     ##################
 
     device = args.device
-    
-    term=f"_{k}"
-    
+        
     path_model = f'ckpt/{args.folder_save}'
     
     n_batch = args.batch_size_generation
@@ -33,7 +31,7 @@ def sample_beta_VAE_from_embedded_data(args, beta, k=0):
     ### Import Model ###
     ####################
 
-    import_model = torch.load(f'{path_model}/model_vae_embedded_data_{beta}{term}.pt')
+    import_model = torch.load(f'{path_model}/model{term}.pt')
 
     model = Beta_VAE_Embedded_data(train_z.shape[1], beta,k)
     model.load_state_dict(import_model)
@@ -57,4 +55,4 @@ def sample_beta_VAE_from_embedded_data(args, beta, k=0):
             res.append((x.cpu()*2 +mean_train).numpy())
         res = np.concatenate(res)
 
-    np.save(f'ckpt/{args.folder_save}/embedded_generated_VAE_beta_{beta}{term}.npy', res)
+    np.save(f'ckpt/{args.folder_save}/encoded_generated{term}.npy', res)

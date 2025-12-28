@@ -51,7 +51,7 @@ def learn_encoding_Transformer_VAE(args):
     
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     save_folder = args.folder_save
     attr_setname = args.attributes_setname
@@ -92,8 +92,8 @@ def learn_encoding_Transformer_VAE(args):
     info = pd.read_csv(info_path, sep = ";")
     info = info[info[attr_setname]][["Type", "Variable_name"]]
 
-    idx_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool", "category"])].to_list()
-    idx_num = info["Variable_name"][info["Type"].isin(["int","cont", "int64","float64"])].to_list()
+    name_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool", "category"])].to_list()
+    name_num = info["Variable_name"][info["Type"].isin(["int","cont", "int64","float64"])].to_list()
 
 
     # curr_dir = os.path.dirname(os.path.abspath(__file__))
@@ -107,7 +107,17 @@ def learn_encoding_Transformer_VAE(args):
     decoder_save_path = f'{ckpt_dir}/decoder_Transformer_VAE.pt'
     path_time = f'{ckpt_dir}/training_time_Transformer_VAE.txt'
     
-    X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename, idx_cat, idx_num, T_dict, )
+    X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename_training, name_cat, name_num, T_dict, )
+    
+    # print(X_cat[1])
+    
+    # for j in range(X_cat[1].shape[1]):
+    #     unique_values_validation = np.unique(X_cat[1][:,j])
+    #     unique_values_training = np.unique(X_cat[0][:,j])
+    #     print(j, set(unique_values_validation).issubset(unique_values_training))
+    #     # for val in unique_values_validation:
+    #     #     X_cat[0][:,0]
+    # raise
 
     X_train_num, _ = X_num
     X_train_cat, _ = X_cat
@@ -196,7 +206,7 @@ def learn_encoding_Transformer_VAE(args):
             curr_loss_multi += loss_ce.item() * batch_length
             curr_loss_gauss += loss_mse.item() * batch_length
             curr_loss_kl    += loss_kld.item() * batch_length
-            curr_acc += batch_size
+            curr_acc += batch_length*train_acc
 
         num_loss = curr_loss_gauss / curr_count
         cat_loss = curr_loss_multi / curr_count
@@ -214,7 +224,7 @@ def learn_encoding_Transformer_VAE(args):
 
             val_mse_loss, val_ce_loss, val_kl_loss, val_acc = compute_loss(X_validation_num, X_validation_cat, Recon_X_num, Recon_X_cat, mu_z, std_z)
             val_loss = val_mse_loss.item() + val_ce_loss.item() + beta * val_kl_loss.item()
-            if(len(idx_num)==0):
+            if(len(name_num)==0):
                 val_loss = val_ce_loss.item() + beta * val_kl_loss.item()
 
             scheduler.step(val_loss)

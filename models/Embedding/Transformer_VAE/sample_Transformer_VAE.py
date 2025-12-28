@@ -24,7 +24,7 @@ def decode_Transformer_VAE(args, term):
 
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     save_folder = args.folder_save
     attr_setname = args.attributes_setname
@@ -39,10 +39,6 @@ def decode_Transformer_VAE(args, term):
 
     T = src.Transformations(**T_dict)
     data_dir = f'{datapath}/{dataname}'
-    if "_train" in args.filename:
-        filename_training = filename
-    else:
-        filename_training = '_train.'.join(args.filename.split('.'))
     training_file = f'{data_dir}/{filename_training}'
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
 
@@ -77,7 +73,7 @@ def decode_Transformer_VAE(args, term):
     idx_num = np.arange(len(info))[info["Type"].isin(["int","cont", "int64","float64"])]
     name_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool", "category"])]
     
-    training_data = pd.read_csv(training_file, sep = ";", index_col="Original_index", low_memory=False)[info["Variable_name"]]
+    training_data = pd.read_csv(training_file, sep = ";", low_memory=False)[info["Variable_name"]]
     for idx in name_cat:
         training_data[idx] = training_data[idx].astype(str)
 
@@ -85,7 +81,7 @@ def decode_Transformer_VAE(args, term):
     ### Process data ###
     ####################
 
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(args.filename.split('.'))
+    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split('.'))
     sampling_file = f'{folder_sampling}/{filename_sampling}'
 
     training_data, _ = preprocessing_cat_data_dataframe_sampling(training_data, min_size_category, name_cat)

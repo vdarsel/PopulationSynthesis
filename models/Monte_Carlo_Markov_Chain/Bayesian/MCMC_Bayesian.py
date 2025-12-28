@@ -28,8 +28,7 @@ def gibbs_sampling_one_pass_np(data_np,data_train_np, n_cols = -1):
         data_np[i] = values[0]
     return data_np
 
-def gibbs_sampling_one_pass_np_dict_Bayesian(data_np, translation_dict_values, translation_dict_freq, unique_vals, n_cols = -1):
-    base_alpha = 0.1 
+def gibbs_sampling_one_pass_np_dict_Bayesian(data_np, translation_dict_values, translation_dict_freq, unique_vals, base_alpha, n_cols = -1):
     keep_col = np.array([True for _ in range(n_cols)])
     for i in range(n_cols):
         keep_col_temp = keep_col.copy() 
@@ -54,7 +53,7 @@ def intersection_eq_np(array_main_: np.ndarray, array_compare_: np.ndarray) -> n
     return (array_main_==array_compare_).all(1)
 
 
-def MCMC_Bayesian_learn_sample(args):
+def MCMC_Bayesian_learn_sample(args, alpha, term):
     
     print("\n\nTraining MCMC with Bayesian posterior distribution\n\n")
 
@@ -62,7 +61,6 @@ def MCMC_Bayesian_learn_sample(args):
     ### Parameters ###
     ##################
 
-    term = "_MCMC_Bayesian"
     t0 = time()
     datapath = "Data"
     dataname = args.dataname
@@ -79,7 +77,6 @@ def MCMC_Bayesian_learn_sample(args):
 
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
     sampling_file = f'{folder_sampling}/{filename_sampling}'
-    sampling_file = f'{folder_sampling}/{filename_sampling.replace(".","_alpha_0_1.")}'
     
     if (not os.path.exists(folder_sampling)):
         os.makedirs(folder_sampling)
@@ -170,7 +167,7 @@ def MCMC_Bayesian_learn_sample(args):
     
     print("\nSampling")
     for i in tqdm(range(args.MCMC_Bayesian.warm_up+(args.n_generation)*args.MCMC_Bayesian.thinning)):
-        data = gibbs_sampling_one_pass_np_dict_Bayesian(data,transl_values, transl_count, unique_vals, n_cols)
+        data = gibbs_sampling_one_pass_np_dict_Bayesian(data,transl_values, transl_count, unique_vals, alpha, n_cols)
         if (i>args.MCMC_Bayesian.warm_up):
             if(i%args.MCMC_Bayesian.thinning==0):
                 res.append(data.copy())

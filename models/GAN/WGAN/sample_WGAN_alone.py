@@ -8,7 +8,7 @@ from utils.utils_sample import get_categories_inverse, get_normalizer_num, prepr
 import shutil
 import pandas as pd
 
-def sample_WGAN_alone(args, k = 256):
+def sample_WGAN_alone(args, term, k = 256):
     
     print("\n\nSampling WGAN model on raw data\n\n")
 
@@ -17,21 +17,15 @@ def sample_WGAN_alone(args, k = 256):
     ##################
     
     n_sample = args.n_generation
-    term = f"_WGAN_no_embed_{k}"
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     attr_setname = args.attributes_setname
     device = args.device
     data_dir = f'{datapath}/{dataname}'
-    
-    if "_train" in args.filename:
-        filename_training = filename
-    else:
-        filename_training = '_train.'.join(args.filename.split('.'))
-    
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(args.filename.split('.'))
+        
+    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split("."))
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
     sampling_file = f'{folder_sampling}/{filename_sampling}'
 
@@ -62,12 +56,13 @@ def sample_WGAN_alone(args, k = 256):
     info = pd.read_csv(info_path, sep = ";")
     info = info[info[attr_setname]][["Type", "Variable_name"]].reset_index()
 
-    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","cat","bool"])]
-    idx_num = np.arange(len(info))[info["Type"].isin(["int","cont"])]
-    name_cat = info["Variable_name"][info["Type"].isin(["binary","cat","bool"])]
+
+    name_cat = info[info["Type"].isin(["binary","category","bool"])].reset_index()["Variable_name"]
+    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category","bool"])]
+    idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
 
 
-    training_data = pd.read_csv(training_file, sep = ";", index_col="Original_index")[info["Variable_name"]]
+    training_data = pd.read_csv(training_file, sep = ";", low_memory=False)[info["Variable_name"]]
     for idx in name_cat:
         training_data[idx] = training_data[idx].astype(str)
     
@@ -137,5 +132,5 @@ def sample_WGAN_alone(args, k = 256):
     #################
 
     (pd.DataFrame(final_data, columns=info["Variable_name"]).to_csv(sampling_file,sep=";", index=False))
-    shutil.copyfile(f"../../Configuration/conf_variable/{args.variable}.yml", f"{folder_sampling}/{args.variable}.yml")
-    shutil.copyfile(f"../../Configuration/conf_size/{args.str_float}%.yml", f"{folder_sampling}/{args.str_float}%.yml")
+    shutil.copyfile(f"conf/conf_variable/{args.variable}.yml", f"{folder_sampling}/{args.variable}.yml")
+    shutil.copyfile(f"conf/conf_size/{args.str_float}%.yml", f"{folder_sampling}/{args.str_float}%.yml")

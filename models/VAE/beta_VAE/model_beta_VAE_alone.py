@@ -26,7 +26,8 @@ class Beta_VAE(nn.Module):
         z_dim = 2*in_z_dim//8
         self.dims = [z_dim*2**(3-i) for i in range(4)]
         self.z_dim = self.dims[-1]
-        print("Dimension of the layers: ", np.concatenate([[self.dim_in],self.dims]))
+        print("Dimension of the layers (encoder): ", np.concatenate([[self.dim_in],self.dims]))
+        print("Dimension of the layers (decoder): ", np.concatenate([self.dims[::-1],[self.dim_in]]))
         self.beta = beta
         self.encoder = nn.Sequential(
             nn.Linear(self.dim_in,self.dims[0]),

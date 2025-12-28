@@ -37,7 +37,7 @@ def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
     return mse_loss, ce_loss, loss_kld, acc
 
 
-def train_beta_VAE_from_embedded_data(args, beta, dim):
+def train_beta_VAE_from_embedded_data(args, beta, term, dim):
 
     print("\n\nTraining beta-VAE on embedded data\n\n")
 
@@ -47,11 +47,6 @@ def train_beta_VAE_from_embedded_data(args, beta, dim):
 
     device = args.device
     
-    if beta%1==0:
-        beta_str = str(beta).split(".0")[0]
-    else:
-        beta_str = str(beta)
-
     num_epochs = args.beta_VAE_embedded_data.n_epochs + 1
     batch_size = args.beta_VAE_embedded_data.batch_size
 
@@ -73,7 +68,7 @@ def train_beta_VAE_from_embedded_data(args, beta, dim):
     validation_z = (validation_z - mean) / 2 #center dat on 0 with the same range
     validation_data = validation_z
     validation_data = torch.tensor(validation_data).to(device)
-    path_time = f'ckpt/{args.folder_save}/training_time_beta_VAE_{beta_str}_{dim}.txt'
+    path_time = f'ckpt/{args.folder_save}/training_time{term}.txt'
 
     train_loader = DataLoader(
         train_data,
@@ -100,7 +95,7 @@ def train_beta_VAE_from_embedded_data(args, beta, dim):
     ###################
     
     model.train()
-    torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{dim}.pt')
+    torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
 
     best_loss = float('inf')
     current_lr = optimizer.param_groups[0]['lr']
@@ -149,7 +144,7 @@ def train_beta_VAE_from_embedded_data(args, beta, dim):
             if curr_loss < best_loss:
                 best_loss = curr_loss.item()
                 patience = 0
-                torch.save(model.state_dict(), f'{path_model_save}/model_vae_embedded_data_{beta_str}_{dim}.pt')
+                torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
             else:
                 patience += 1
                 if patience == args.beta_VAE_embedded_data.patience_max:

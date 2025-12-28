@@ -8,7 +8,7 @@ import time
 import numpy as np
 
 
-def train_WGAN_embedding_data(args, k=256):
+def train_WGAN_embedding_data(args, term, k=256):
     
     print("\n\nTraining WGAN on embedded data\n\n")
 
@@ -21,7 +21,7 @@ def train_WGAN_embedding_data(args, k=256):
     cktp_dir = 'ckpt'
 
     path_save = f'{cktp_dir}/{args.folder_save}'
-    path_time = f'{cktp_dir}/{args.folder_save}/time_WGAN_embedded_data_{k}.txt'
+    path_time = f'{cktp_dir}/{args.folder_save}/training_time{term}.txt'
 
     if (not os.path.exists(path_save)):
         os.makedirs(path_save)
@@ -151,8 +151,8 @@ def train_WGAN_embedding_data(args, k=256):
     ### Save Model ###
     ##################
 
-    torch.save(generator_net.state_dict(),f'{path_save}/generator_WGAN_embedded_data_{k}.pt')
-    torch.save(discriminator_net.state_dict(),f'{path_save}/discriminator_WGAN_embedded_data_{k}.pt')
+    torch.save(generator_net.state_dict(),f'{path_save}/generator{term}.pt')
+    torch.save(discriminator_net.state_dict(),f'{path_save}/discriminator{term}.pt')
 
     end_time = time.time()
     message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)

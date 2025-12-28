@@ -7,7 +7,7 @@ import shutil
 from models.VAE.beta_VAE.model_beta_VAE_alone import Beta_VAE
 from utils.utils_sample import get_categories_inverse, get_normalizer_num, preprocessing_cat_data_dataframe_sampling, process_nans
 
-def sample_beta_VAE_alone(args,beta, k=0): 
+def sample_beta_VAE_alone(args,beta, term, k=0): 
     
     print("\n\nSampling beta-VAE model on raw data\n\n")
 
@@ -15,20 +15,16 @@ def sample_beta_VAE_alone(args,beta, k=0):
     ### Parameters ###
     ##################
     
-    if float(beta)%1==0:
-        if (type(beta)==str):
-            beta = beta.split(".0")[0]
     n_sample = args.n_generation
-    term = f"_beta_VAE_beta_{beta}_{k}"
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     attr_setname = args.attributes_setname
     device = args.device
     data_dir = f'{datapath}/{dataname}'
     
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(args.filename.split('.'))
+    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split('.'))
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
     sampling_file = f'{folder_sampling}/{filename_sampling}'
 
@@ -53,22 +49,15 @@ def sample_beta_VAE_alone(args,beta, k=0):
     info = pd.read_csv(info_path, sep = ";")
     info = info[info[attr_setname]][["Type", "Variable_name"]].reset_index()
 
-    idx_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool"])].to_list()
-    idx_num = info["Variable_name"][info["Type"].isin(["int","cont"])].to_list()
+
+    name_cat = info[info["Type"].isin(["binary","category","bool"])].reset_index()["Variable_name"]
+    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category","bool"])]
+    idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
 
 
-    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","cat","bool"])]
-    idx_num = np.arange(len(info))[info["Type"].isin(["int","cont"])]
-    name_cat = info["Variable_name"][info["Type"].isin(["binary","cat","bool"])]
+    training_file = f'{data_dir}/{filename_training}'
 
-    if "_train" in args.filename:
-        training_file = f'{data_dir}/{filename}'
-    else:
-        training_file = f'{data_dir}/{'_train.'.join(args.filename.split('.'))}'
-
-    training_file = f'{data_dir}/{filename}'
-
-    training_data = pd.read_csv(training_file, sep = ";", index_col="Original_index", low_memory=False)[info["Variable_name"]]
+    training_data = pd.read_csv(training_file, sep = ";", low_memory=False)[info["Variable_name"]]
     for idx in name_cat:
         training_data[idx] = training_data[idx].astype(str)
     training_data, _ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)

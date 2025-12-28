@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import torch.nn.functional as F
 
-def train_WGAN_alone(args, k=256):
+def train_WGAN_alone(args, term, k=256):
     
     print("\n\nTraining WGAN on raw data\n\n")
 
@@ -20,7 +20,7 @@ def train_WGAN_alone(args, k=256):
 
     datapath = "Data"
     dataname = args.dataname
-    filename = args.filename
+    filename_training = args.filename_training
     infoname = args.infoname
     save_folder = args.folder_save
     attr_setname = args.attributes_setname
@@ -32,7 +32,7 @@ def train_WGAN_alone(args, k=256):
     
     path_model_save = f'ckpt/{save_folder}'
 
-    path_time = f'ckpt/{args.folder_save}/training_time_WGAN.txt'
+    path_time = f'ckpt/{args.folder_save}/training_time{term}.txt'
 
     T_dict = {}
 
@@ -54,14 +54,14 @@ def train_WGAN_alone(args, k=256):
     info = pd.read_csv(info_path, sep = ";")
     info = info[info[attr_setname]][["Type", "Variable_name"]]
 
-    name_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool"])].to_list()
+    name_cat = info["Variable_name"][info["Type"].isin(["binary","category", "bool"])].to_list()
     
-    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","cat", "bool"])]
-    idx_num = np.arange(len(info))[info["Type"].isin(["int","cont"])]
+    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category", "bool"])]
+    idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
     
-    training_file = f"{data_dir}/{filename}"
+    training_file = f"{data_dir}/{filename_training}"
     
-    training_data = pd.read_csv(training_file, sep = ";", index_col="Original_index")[info["Variable_name"]]
+    training_data = pd.read_csv(training_file, sep = ";")[info["Variable_name"]]
     for idx in name_cat:
         training_data[idx] = training_data[idx].astype(str)
     
@@ -198,8 +198,8 @@ def train_WGAN_alone(args, k=256):
     if (not os.path.isdir(path_model_save)):
         os.makedirs(path_model_save)
         
-    torch.save(generator_net.state_dict(),f'{path_model_save}/generator_WGAN_{k}.pt')
-    torch.save(discriminator_net.state_dict(),f'{path_model_save}/discriminator_WGAN_{k}.pt')
+    torch.save(generator_net.state_dict(),f'{path_model_save}/generator{term}.pt')
+    torch.save(discriminator_net.state_dict(),f'{path_model_save}/discriminator{term}.pt')
 
     end_time = time.time()
     message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)

@@ -76,4 +76,4 @@ def sample_Diffusion_from_embedded_data(args, projection_dim = 1024):
     ### Save embeded data ###
     #########################
 
-    np.save(f'ckpt/{args.folder_save}/encoded_generated_diffusion_{term}.npy', res)
+    np.save(f'ckpt/{args.folder_save}/encoded_generated{term}.npy', res)
