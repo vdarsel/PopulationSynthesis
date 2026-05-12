@@ -60,15 +60,19 @@ def sample_beta_VAE_alone(args,beta, term, k=0):
     training_data = pd.read_csv(training_file, sep = ";", low_memory=False)[info["Variable_name"]]
     for idx in name_cat:
         training_data[idx] = training_data[idx].astype(str)
-    training_data, _ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
+    if len(idx_cat)>0:
+        training_data, _ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
     training_data = process_nans(training_data.to_numpy(), idx_num, idx_cat, T_dict['num_nan_policy'], T_dict['cat_nan_policy'])
 
     if (len(idx_num)>0):
         num_inverse = get_normalizer_num(training_data[:,idx_num], T_dict['normalization'])
     else:
         num_inverse = lambda x: x
-    cat_inverse = get_categories_inverse(training_data[:,idx_cat])
-
+    if (len(idx_cat)>0):
+        cat_inverse = get_categories_inverse(training_data[:,idx_cat])
+    else:
+        cat_inverse = lambda x: x
+        
     d_numerical = len(idx_num)
     categories = [len(np.unique(training_data[:,id])) for id in idx_cat]
     
@@ -78,7 +82,7 @@ def sample_beta_VAE_alone(args,beta, term, k=0):
 
     model = Beta_VAE(categories, d_numerical, beta, k).to(device)
     
-    import_model = torch.load(f'{path_model}/model_beta_VAE_{beta}_{k}.pt')
+    import_model = torch.load(f'{path_model}/model_beta_VAE_beta_{beta}_{k}.pt')
 
     model.load_state_dict(import_model)
     
