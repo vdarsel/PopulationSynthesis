@@ -47,19 +47,17 @@ def get_rate_of_impossible_combinations(df_generated, df_info, prop_ori, prop_ge
     """
     df_final = df_generated.copy().astype(str)
     df_final["idx"] = df_final.index 
-    print(len(prop_ori), len(prop_gen), len(combs))
     prob_combs = combs[(prop_ori==0)&(prop_gen!=0)]
     prob_values = values[(prop_ori==0)&(prop_gen!=0)].astype(str)
 
-    columns_list = columns.to_numpy()
     geo_array = df_info["Geographical_attribute"].to_numpy()
-    prob_cols = columns_list[prob_combs.astype(int)]
+    prob_cols = columns[prob_combs.astype(int)]
     prob_combs_unique = np.unique(prob_combs.astype(int), axis = 0)
     has_geo = geo_array[prob_combs_unique.astype(int)].any(1)
     prob_combs_non_geo_unique = prob_combs_unique[~has_geo]
     prob_combs_with_geo_unique = prob_combs_unique[has_geo]
-    prob_cols_with_geo_unique = columns_list[prob_combs_with_geo_unique]
-    prob_cols_non_geo_unique = columns_list[prob_combs_non_geo_unique]
+    prob_cols_with_geo_unique = columns[prob_combs_with_geo_unique]
+    prob_cols_non_geo_unique = columns[prob_combs_non_geo_unique]
     for i in tqdm(range(len(prob_cols_non_geo_unique))):
         cols = prob_cols_non_geo_unique[i]
         prob_values_comb = prob_values[(prob_cols == cols).all(1)]

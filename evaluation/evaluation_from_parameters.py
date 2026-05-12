@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-from evaluation.proportion_sampling import generate_proportion_from_dataset
+from evaluation.proportion_sampling import compute_proportion_file_from_unique_array_and_df, recover_lists_from_dictionnary
 from evaluation.metrics_proportion import get_df_scores_by_cat, get_scores_agg
 from evaluation.heatmap import generate_color_map_save, generate_color_map_filter_save
 from evaluation.metrics_privacy import Distance_to_Closest_Records,generate_histogram_DCR
@@ -38,26 +38,29 @@ def generate_histogram(df, path, i):
         plt.close()
     
 def generate_plot(proportion_sample, proportion_ref, path, i):
+    proportion_ref_concat = np.concat(proportion_ref)
+    proportion_sample_concat = np.concat(proportion_sample)
     dict_title = {1:"Marginal", 2:"Bivariate", 3:"Trivariate"}
     plt.figure(figsize=[7,7])
     plt.plot([-1,1], [-1,1], color='r', alpha=0.5)
-    plt.scatter(proportion_ref,proportion_sample)
-    plt.xlim(-0.02,np.max([proportion_ref,proportion_sample])+0.02)
-    plt.ylim(-0.02,np.max([proportion_ref,proportion_sample])+0.02)
+    for p,q in zip(proportion_ref, proportion_sample):
+        plt.scatter(p,q)
+    plt.xlim(-0.02,np.max([proportion_ref_concat,proportion_sample_concat])+0.02)
+    plt.ylim(-0.02,np.max([proportion_ref_concat,proportion_sample_concat])+0.02)
     plt.xlabel("Original data proportion")
     plt.ylabel("Sampled data proportion")
     plt.title(dict_title[i])
     plt.savefig(f"{path}/comparison_{i}.png")
     plt.close()
-    generate_color_map_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_{i}",200)
-    generate_color_map_filter_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_filter_{i}",2000, min_freq=1)
+    generate_color_map_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_{i}",200)
+    generate_color_map_filter_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_filter_{i}",2000, min_freq=1)
 
-def generate_plot_plotly(proportion_sample, proportion_ref, combi, values, columns_name, path, i, target=100000):
+def generate_plot_plotly(proportion_sample, proportion_ref, combi_names, values, path, i, target=100000):
     coef = max(len(proportion_sample)//target,1)
     keep_idx = np.array([i%coef==0 for i in range(len(proportion_ref))])
     proportion_ref = proportion_ref[keep_idx]
     proportion_sample = proportion_sample[keep_idx]
-    combi = combi[keep_idx]
+    combi_names = combi_names[keep_idx]
     values = values[keep_idx]
     dict_title = {1:"Marginal", 2:"Bivariate", 3:"Trivariate"}
     fig = go.Figure(data=[go.Scatter(x=[-1,1], y=[-1,1],mode="lines",line=dict(color='rgba(255, 17, 0, 0.5)'))],
@@ -66,7 +69,7 @@ def generate_plot_plotly(proportion_sample, proportion_ref, combi, values, colum
                                      yaxis_range=[-0.02,np.max([proportion_ref,proportion_sample])+0.02],
                                      xaxis_title="Original data proportion",
                                      yaxis_title="Sampled data proportion"))
-    fig.add_trace(go.Scatter(x=proportion_ref,y=proportion_sample,mode="markers", customdata=np.stack([columns_name[combi.astype(int)],values], axis=1),
+    fig.add_trace(go.Scatter(x=proportion_ref,y=proportion_sample,mode="markers", customdata=np.stack([combi_names,values], axis=1),
                              hovertemplate="<br>".join([
                                 "ColX: %{x}",
                                 "ColY: %{y}",
@@ -77,6 +80,126 @@ def generate_plot_plotly(proportion_sample, proportion_ref, combi, values, colum
     generate_color_map_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_{i}",2000)
     generate_color_map_filter_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_filter_{i}",2000, min_freq=10)
 
+
+def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_file, df_for_evaluation, dataset_test_df, dataset_test_df_dcr, dataset_reference_training, df_info, dir_path_save_results=None, save=False):
+    Ser_review = pd.Series(index=["\overline{SRMSE}_1","\overline{SRMSE}_2","\overline{SRMSE}_3",
+                     "\overline{Hellinger}_1","\overline{Hellinger}_2","\overline{Hellinger}_3",
+                     "SRMSE_1","SRMSE_2","SRMSE_3",
+                     "Hellinger_1","Hellinger_2","Hellinger_3",
+                     "Pearson_1","Pearson_2","Pearson_3",
+                     "R2_1","R2_2","R2_3",
+                     "Rate of copies (training)", "Rate of copies (training, without geo)",
+                     "Rate of copies (in testing not in training)", "Rate of copies (in testing not in training, without geo)",
+                     "SSCIOD", "SSCIOD (without geo)"
+                     ], dtype=str)
+
+    columns = df_info["Variable_name"].to_numpy()
+    columns_without_geo = df_info[(~df_info["Geographical_attribute"])]["Variable_name"]
+
+    
+    dict_title = {1:"Marginal", 2:"Bivariate", 3:"Trivariate"}
+    df_scores_median = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
+    df_scores_mean = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
+    df_scores_agg = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
+
+    
+    for i in range(1,4):    
+        proportion_file = f"{basename_file_save}_{i}.npy"
+        if (not os.path.isfile(proportion_file)):
+            print("\nGenerate Proportion file for sample")
+            compute_proportion_file_from_unique_array_and_df(dict_unique_values,
+                    df_for_evaluation.astype(str),
+                    columns,
+                    basename_file_save,
+                    i,
+                    ".")
+        combi_test_file = f"{proportion_test_file}_{i}_comb.npy"
+        value_test_file = f"{proportion_test_file}_{i}_values.npy"
+
+        proportion_concat = np.load(proportion_file)
+        proportion_test_concat = np.load(f"{proportion_test_file}_{i}.npy")
+        combi_concat = np.load(combi_test_file).astype(int)
+        combi_names_concat = columns[combi_concat]
+        values_test_concat = np.load(value_test_file, allow_pickle=True)
+        
+        proportion = recover_lists_from_dictionnary(columns, dict_unique_values, proportion_concat, i)
+        proportion_test = recover_lists_from_dictionnary(columns, dict_unique_values, proportion_test_concat, i)
+        combi_list = np.array([a[0] for a in recover_lists_from_dictionnary(columns, dict_unique_values, combi_concat, i)]).astype(int)
+        combi_names = columns[combi_list]
+        
+        df_scores_by_cat = get_df_scores_by_cat(proportion, proportion_test, combi_list, combi_names, i)
+        
+        if save:
+            df_scores_by_cat.to_csv(f"{dir_path_save_results}/scores_by_cat_{i}.csv", sep=";")    
+            generate_histogram(df_scores_by_cat, dir_path_save_results, i)
+            generate_plot(proportion, proportion_test, dir_path_save_results, i)
+            generate_plot_plotly(proportion_concat, proportion_test_concat, combi_names_concat, values_test_concat, dir_path_save_results, i)
+        df_scores_median.loc[dict_title[i]] =  df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].median()
+        df_scores_mean.loc[dict_title[i]] = df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].mean()
+        df_scores_agg.loc[dict_title[i]] = pd.Series(get_scores_agg(proportion_test,proportion),index=["SRMSE","Hellinger","Pearson","R2"])
+        
+        proportion_file = f"{basename_file_save}_{i}.npy"
+        proportion = np.load(proportion_file)
+
+    df_DCR = Distance_to_Closest_Records(df_for_evaluation, dataset_reference_training, dataset_test_df_dcr, df_info.reset_index(),proportion_test_file)
+
+    if save:
+        generate_histogram_DCR(df_DCR, dir_path_save_results)
+    Wasserstein_distance_DCR = np.sqrt(1/(len(df_DCR)**2)*np.sum(np.power(df_DCR["DCR train"].sort_values().values - df_DCR["DCR test"].sort_values().values,2)))
+        
+    rate_non_geo_list, rate_geo_list = [],[]
+    for i in range(1,4):
+        proportion_file = f"{basename_file_save}_{i}.npy"
+        proportion = np.load(proportion_file)
+
+        proportion_test = np.load(f"{proportion_test_file}_{i}.npy")
+        values = np.load(f"{proportion_test_file}_{i}_values.npy", allow_pickle=True)
+        combs = np.load(f"{proportion_test_file}_{i}_comb.npy")
+        rate_non_geo, rate_geo = get_rate_of_impossible_combinations(df_for_evaluation,df_info, proportion_test, proportion, columns, combs, values)
+        rate_non_geo_list.append(rate_non_geo)
+        rate_geo_list.append(rate_geo)
+
+    if save:
+        df_scores_agg.to_csv(f"{dir_path_save_results}/scores.csv", sep=";")
+        df_scores_mean.to_csv(f"{dir_path_save_results}/scores_mean.csv", sep=";")
+        df_scores_median.to_csv(f"{dir_path_save_results}/scores_median.csv", sep=";")
+
+    Ser_review["\overline{SRMSE}_1"] = f"{df_scores_mean["SRMSE"]["Marginal"] :.3g}"
+    Ser_review["\overline{SRMSE}_2"] = f"{df_scores_mean["SRMSE"]["Bivariate"] :.3g}"
+    Ser_review["\overline{SRMSE}_3"] = f"{df_scores_mean["SRMSE"]["Trivariate"] :.3g}"
+    Ser_review["\overline{Hellinger}_1"] = f"{df_scores_mean["Hellinger"]["Marginal"] :.3g}"
+    Ser_review["\overline{Hellinger}_2"] = f"{df_scores_mean["Hellinger"]["Bivariate"] :.3g}"
+    Ser_review["\overline{Hellinger}_3"] = f"{df_scores_mean["Hellinger"]["Trivariate"] :.3g}"
+    Ser_review["SRMSE_1"] = f"{df_scores_agg["SRMSE"]["Marginal"] :.3g}"
+    Ser_review["SRMSE_2"] = f"{df_scores_agg["SRMSE"]["Bivariate"] :.3g}"
+    Ser_review["SRMSE_3"] = f"{df_scores_agg["SRMSE"]["Trivariate"] :.3g}"
+    Ser_review["Hellinger_1"] = f"{df_scores_agg["Hellinger"]["Marginal"] :.3g}"
+    Ser_review["Hellinger_2"] = f"{df_scores_agg["Hellinger"]["Bivariate"] :.3g}"
+    Ser_review["Hellinger_3"] = f"{df_scores_agg["Hellinger"]["Trivariate"] :.3g}"
+    Ser_review["Pearson_1"] = f"{df_scores_agg["Pearson"]["Marginal"] :.3g}"
+    Ser_review["Pearson_2"] = f"{df_scores_agg["Pearson"]["Bivariate"] :.3g}"
+    Ser_review["Pearson_3"] = f"{df_scores_agg["Pearson"]["Trivariate"] :.3g}"
+    Ser_review["R2_1"] = f"{df_scores_agg["R2"]["Marginal"] :.3g}"
+    Ser_review["R2_2"] = f"{df_scores_agg["R2"]["Bivariate"] :.3g}"
+    Ser_review["R2_3"] = f"{df_scores_agg["R2"]["Trivariate"] :.3g}"
+    Ser_review["SSCIOD"] = f'{rate_geo_list[1]:.2%}'
+    Ser_review["SSCIOD (without geo)"] = f'{rate_non_geo_list[1]:.2%}'
+    Ser_review["Rate of copies (training)"] = f'{np.abs(get_proportion_from_original_data_df(dataset_reference_training,dataset_test_df,columns)-get_proportion_from_original_data_df(dataset_reference_training,df_for_evaluation,columns)):.2%}'
+    Ser_review["Rate of copies (training, without geo)"] = f'{np.abs(get_proportion_from_original_data_df(dataset_reference_training,dataset_test_df,columns_without_geo)-get_proportion_from_original_data_df(dataset_reference_training,df_for_evaluation,columns_without_geo)):.2%}'
+
+    val = get_proportion_from_original_data_df_not_in_other_df(dataset_test_df,dataset_reference_training,df_for_evaluation,columns)
+    if (val=="NA"):
+        Ser_review["Rate of copies (in testing not in training)"] = 'NA'
+    else:
+        Ser_review["Rate of copies (in testing not in training)"] = f'{val:.2%}'
+    val = get_proportion_from_original_data_df_not_in_other_df(dataset_test_df,dataset_reference_training,df_for_evaluation,columns_without_geo)
+    if (val=="NA"):
+        Ser_review["Rate of copies (in testing not in training, without geo)"] = 'NA'
+    else:
+        Ser_review["Rate of copies (in testing not in training, without geo)"] = f'{val:.2%}'
+    Ser_review["Wasserstein-DCR"] = Wasserstein_distance_DCR
+    
+    return Ser_review
 
 
 def full_evaluation(args, term_evaluation=""):
@@ -93,6 +216,8 @@ def full_evaluation(args, term_evaluation=""):
     dir_path_evaluation_generated_data = f"{dir_path_generated_data}/{args.dataset_evaluation}"
     
     datapath = "Data"
+    
+    attr_setname = args.attributes_setname
     
     filename_training = args.filename_training
     
@@ -135,161 +260,75 @@ def full_evaluation(args, term_evaluation=""):
     #################
 
     df_info = pd.read_csv(f"{datapath}/{args.dataname}/{args.infoname}",sep=";")
-    df_info = df_info[df_info[args.attributes_setname]]
+    df_info = df_info[df_info[attr_setname]]
 
-    columns = df_info["Variable_name"]
+    columns = df_info["Variable_name"].to_numpy()
     columns_without_geo = df_info[(~df_info["Geographical_attribute"])]["Variable_name"]
 
     idx_num = np.arange(len(df_info))[(df_info["Type"].isin(["int","float"]))]
     name_cat = df_info["Variable_name"][(df_info["Type"].isin(["binary","boolean","category"]))].to_list()
 
-    dataset_train = pd.read_csv(file_train, sep=";", low_memory=False)[df_info["Variable_name"]]
+    def load_data(filename, df_info):
+        data = pd.read_csv(filename, sep=";", low_memory=False,usecols=df_info["Variable_name"])
+        for idx in df_info[df_info["Type"].isin(["binary","boolean","category"])]["Variable_name"]:
+            data[idx] = data[idx].astype(str)
+        for idx in df_info[df_info["Type"].isin(["int"])]["Variable_name"]:
+            data[idx] = data[idx].astype(int)
+        for idx in df_info[df_info["Type"].isin(["float"])]["Variable_name"]:
+            data[idx] = data[idx].astype(float)
+        return data  
 
-    for idx in df_info[df_info["Type"].isin(["category"])]["Variable_name"]:
-        dataset_train[idx] = dataset_train[idx].astype(str)
-    dataset_train = dataset_train[columns]
 
-    dataset_test = pd.read_csv(file_test, sep=";", low_memory=False)
-    dataset_test_WDCR = pd.read_csv(file_test_WDCR, sep=";", low_memory=False)
+    dataset_train = load_data(file_train, df_info)
 
-    for idx in df_info[(df_info["Type"].isin(["category"]))]["Variable_name"]:
-        dataset_test[idx] = dataset_test[idx].astype(str)
-    dataset_test = dataset_test[columns]
+    dataset_test = load_data(file_test, df_info)
+    dataset_test_WDCR = load_data(file_test_WDCR, df_info)
 
     min_size_category = args.transform.cat_min_count
-    dataset_train,list_df  = preprocessing_cat_data_dataframe_sampling(dataset_train, min_size_category, name_cat, [dataset_test])
-    dataset_test = list_df[0][columns]
-    dataset_test_numpy = dataset_test.to_numpy()
+    dataset_train,list_df  = preprocessing_cat_data_dataframe_sampling(dataset_train, min_size_category, name_cat, [dataset_test, dataset_test_WDCR])
+    dataset_test = list_df[0]  
+    dataset_test_WDCR = list_df[1]  
     
-    dataset_train_numpy = dataset_train.to_numpy()
     
+    df_sample = load_data(f'{basename}.csv', df_info)
 
-    
-    df_sample = pd.read_csv(f'{basename}.csv', sep=";")
+    dict_unique_values = {}
+    for col in columns:
+        folder_unique_file = f"results/Proportion_save/Unique_Values_Census_2021/{filename_training.split(".csv")[0]}"
+        unique_file = f"{folder_unique_file}/unique_values_{col}.npy"
+        if (not os.path.isfile(unique_file)):
+            if (not os.path.isdir(folder_unique_file)):
+                os.makedirs(folder_unique_file)
+            unique_values = np.sort(dataset_test[col].unique())
+            np.save(unique_file, unique_values, allow_pickle=True)
+            
+        unique_values = np.load(unique_file, allow_pickle=True).astype(str)
+        dict_unique_values[col] = np.sort(unique_values)
 
-    for col in df_info[(df_info["Type"].isin(["category"]))]["Variable_name"]:
-        df_sample[col] = df_sample[col].astype(str)
-    df_sample = df_sample[columns]
-    
     if (args.dataset_evaluation!=args.dataname): 
         # For future functionalities
-        folder_test_file = f"results/Proportion_save/{args.attributes_setname}/{args.dataset_evaluation}/{args.dataname}"
-        name_test_file_distribution = f"Proportion_test_data_distribution_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
-        name_test_file_realism = f"Proportion_test_data_realism_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        folder_test_file = f"results/Proportion_save/{attr_setname}/{args.dataset_evaluation}/{args.dataname}"
+        name_test_file = f"Proportion_test_data_distribution_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
     else:
-        folder_test_file = f"results/Proportion_save/{args.attributes_setname}/{args.dataname}/{args.dataname}"
-        name_test_file_distribution = f"Proportion_reference_data_distribution_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
-        name_test_file_realism = f"Proportion_reference_data_realism_{args.dataname}_{(filename_training).split(".")[0]}_{args.attributes_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        folder_test_file = f"results/Proportion_save/{attr_setname}/{args.dataname}/{args.dataname}"
+        name_test_file = f"Proportion_reference_data_distribution_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
 
-    ######################################
-    ### Evaluation of the distribution ###
-    ######################################
+    proportion_test_file = f"{folder_test_file}/Proportion_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
 
     for i in range(1,4):    
-        basename_save_distribution = f"{basename_save}_distribution"
-        proportion_file = f"{basename_save_distribution}_{i}.npy"
-        dataset_test_numpy_distribution = np.copy(dataset_test_numpy)
-        dataset_generated_distribution = df_sample.to_numpy()
-        # bins_distribution = df_info["Bin_distribution"].to_list()
-        # for j in idx_num:
-        #     dataset_test_numpy_distribution[:,j] = (dataset_test_numpy_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
-        #     dataset_generated_distribution[:,j] = (dataset_generated_distribution[:,j]//bins_distribution[j])*bins_distribution[j]
-        if (not os.path.isfile(proportion_file)):
-            print("\nGenerate Proportion file for sample (distribution)")
-            generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_generated_distribution,i, '.', basename_save_distribution,False)
-        if (not os.path.isfile(f"{folder_test_file}/{name_test_file_distribution}_{i}.npy")):
-            if(not os.path.isdir(folder_test_file)):
-                os.makedirs(folder_test_file)
-            print("\nGenerate Proportion file for test data (distribution)")
-            generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_test_numpy_distribution,i, folder_test_file, name_test_file_distribution,True)
-        proportion = np.load(proportion_file)
-        combi_test_file = f"{folder_test_file}/{name_test_file_distribution}_{i}_comb.npy"
-        value_test_file = f"{folder_test_file}/{name_test_file_distribution}_{i}_values.npy"
-        proportion_test = np.load(f"{folder_test_file}/{name_test_file_distribution}_{i}.npy")
-        combi_test = np.load(combi_test_file)
-        values_test = np.load(value_test_file, allow_pickle=True)
-        df_scores_by_cat = get_df_scores_by_cat(proportion,proportion_test,combi_test,i)
-        df_scores_by_cat.to_csv(f"{dir_path_evaluation_generated_data}/scores_by_cat_{i}.csv", sep=";")
-        generate_histogram(df_scores_by_cat, dir_path_evaluation_generated_data, i)
-        generate_plot(proportion, proportion_test, dir_path_evaluation_generated_data, i)
-        generate_plot_plotly(proportion, proportion_test, combi_test, values_test, columns.to_numpy(),dir_path_evaluation_generated_data, i)
-        df_scores_median.loc[dict_title[i]] =  df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].median()
-        df_scores_mean.loc[dict_title[i]] = df_scores_by_cat[["SRMSE","Hellinger","Pearson","R2"]].mean()
-        df_scores_agg.loc[dict_title[i]] = pd.Series(get_scores_agg(proportion_test,proportion),index=["SRMSE","Hellinger","Pearson","R2"])
+        if (not os.path.isfile(f"{proportion_test_file}_{i}.npy")):
+            if(not os.path.isdir(os.path.dirname(f"{folder_test_file}/{name_test_file}"))):
+                os.makedirs(os.path.dirname(f"{folder_test_file}/{name_test_file}"))
+            print("\nGenerate Proportion file for test data")
+            
+            compute_proportion_file_from_unique_array_and_df(dict_unique_values, dataset_test.astype(str), columns, proportion_test_file, i, ".", True)
+        else:
+            print(f"Shape ({i}):", np.load(f"{proportion_test_file}_{i}.npy").shape)
+    
+    ser_scores_generated = output_serie_eval(dict_unique_values, basename_save, proportion_test_file, df_sample, dataset_test, dataset_test_WDCR, dataset_train, df_info, dir_path_evaluation_generated_data, True)
+    
+    
+    
+    res_pandas = pd.DataFrame([ser_scores_generated], index=[f"{args.attributes_setname}_{args.folder_save_end}{term_evaluation}"])    
+    res_pandas.transpose().to_csv(f"{dir_path_evaluation_generated_data}/overview_score.csv", sep=";", index_label="Metric")
 
-    #################################
-    ### Evaluation of the realism ###
-    #################################
-
-    rate_non_geo_list, rate_geo_list = [],[]
-    for i in range(1,4):
-        basename_save_realism = f"{basename_save}_realism"
-        proportion_file = f"{basename_save_realism}_{i}.npy"
-        dataset_generated_realism = df_sample.to_numpy()
-        if (not os.path.isfile(proportion_file)):
-            print("\nGenerate Proportion file for sample (realism)")
-            generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_generated_realism,i, '.', basename_save_realism,False)
-        if (not os.path.isfile(f"{folder_test_file}/{name_test_file_realism}_{i}.npy")):
-            if(not os.path.isdir(folder_test_file)):
-                os.makedirs(folder_test_file)
-            print("\nGenerate Proportion file for test data (realism)")
-            generate_proportion_from_dataset(dataset_test_numpy_distribution,dataset_test_numpy_distribution,i, folder_test_file, name_test_file_realism,True)
-
-        proportion = np.load(proportion_file)
-        proportion_test = np.load(f"{folder_test_file}/{name_test_file_realism}_{i}.npy")
-        values = np.load(f"{folder_test_file}/{name_test_file_realism}_{i}_values.npy", allow_pickle=True)
-        combs = np.load(f"{folder_test_file}/{name_test_file_realism}_{i}_comb.npy")
-        rate_non_geo, rate_geo = get_rate_of_impossible_combinations(df_sample,df_info, proportion_test, proportion, columns, combs, values)
-        rate_non_geo_list.append(rate_non_geo)
-        rate_geo_list.append(rate_geo)
-        
-    #################################
-    ### Evaluation of the privacy ###
-    #################################
-
-    if (not os.path.isfile(f"{dir_path_evaluation_generated_data}/dcr.csv")):
-        df_DCR = Distance_to_Closest_Records(df_sample,dataset_train,dataset_test_WDCR, df_info.reset_index(), f"{folder_test_file}/{name_test_file_distribution}")
-        df_DCR.to_csv(f"{dir_path_evaluation_generated_data}/dcr.csv", sep=";",index=False)
-    df_DCR = pd.read_csv(f"{dir_path_evaluation_generated_data}/dcr.csv", sep=";")
-    generate_histogram_DCR(df_DCR, dir_path_evaluation_generated_data)
-    Wasserstein_distance_DCR = np.sqrt(1/(len(df_DCR)**2)*np.sum(np.power(df_DCR["DCR train"].sort_values().values - df_DCR["DCR test"].sort_values().values,2)))
-        
-    ############################
-    ### Creation of csv file ###
-    ############################
-        
-    Ser_review["\overline{SRMSE}_1"] = f"{df_scores_mean["SRMSE"]["Marginal"] :.3g}"
-    Ser_review["\overline{SRMSE}_2"] = f"{df_scores_mean["SRMSE"]["Bivariate"] :.3g}"
-    Ser_review["\overline{SRMSE}_3"] = f"{df_scores_mean["SRMSE"]["Trivariate"] :.3g}"
-    Ser_review["\overline{Hellinger}_1"] = f"{df_scores_mean["Hellinger"]["Marginal"] :.3g}"
-    Ser_review["\overline{Hellinger}_2"] = f"{df_scores_mean["Hellinger"]["Bivariate"] :.3g}"
-    Ser_review["\overline{Hellinger}_3"] = f"{df_scores_mean["Hellinger"]["Trivariate"] :.3g}"
-    Ser_review["SRMSE_1"] = f"{df_scores_agg["SRMSE"]["Marginal"] :.3g}"
-    Ser_review["SRMSE_2"] = f"{df_scores_agg["SRMSE"]["Bivariate"] :.3g}"
-    Ser_review["SRMSE_3"] = f"{df_scores_agg["SRMSE"]["Trivariate"] :.3g}"
-    Ser_review["Hellinger_1"] = f"{df_scores_agg["Hellinger"]["Marginal"] :.3g}"
-    Ser_review["Hellinger_2"] = f"{df_scores_agg["Hellinger"]["Bivariate"] :.3g}"
-    Ser_review["Hellinger_3"] = f"{df_scores_agg["Hellinger"]["Trivariate"] :.3g}"
-    Ser_review["Pearson_1"] = f"{df_scores_agg["Pearson"]["Marginal"] :.3g}"
-    Ser_review["Pearson_2"] = f"{df_scores_agg["Pearson"]["Bivariate"] :.3g}"
-    Ser_review["Pearson_3"] = f"{df_scores_agg["Pearson"]["Trivariate"] :.3g}"
-    Ser_review["R2_1"] = f"{df_scores_agg["R2"]["Marginal"] :.3g}"
-    Ser_review["R2_2"] = f"{df_scores_agg["R2"]["Bivariate"] :.3g}"
-    Ser_review["R2_3"] = f"{df_scores_agg["R2"]["Trivariate"] :.3g}"
-    Ser_review["SSCIOD"] = f'{rate_geo_list[1]:.2%}'
-    Ser_review["SSCIOD (without geo)"] = f'{rate_non_geo_list[1]:.2%}'
-    Ser_review["Rate of copies (training)"] = f'{np.abs(get_proportion_from_original_data_df(dataset_train,dataset_test,columns)-get_proportion_from_original_data_df(dataset_train,df_sample,columns)):.2%}'
-    Ser_review["Rate of copies (training, without geo)"] = f'{np.abs(get_proportion_from_original_data_df(dataset_train,dataset_test,columns_without_geo)-get_proportion_from_original_data_df(dataset_train,df_sample,columns_without_geo)):.2%}'
-    val = get_proportion_from_original_data_df_not_in_other_df(dataset_test,dataset_train,df_sample,columns)
-    if (val=="NA"):
-        Ser_review["Rate of copies (in testing not in training)"] = 'NA'
-    else:
-        Ser_review["Rate of copies (in testing not in training)"] = f'{val:.2%}'
-    val = get_proportion_from_original_data_df_not_in_other_df(dataset_test,dataset_train,df_sample,columns_without_geo)
-    if (val=="NA"):
-        Ser_review["Rate of copies (in testing not in training, without geo)"] = 'NA'
-    else:
-        Ser_review["Rate of copies (in testing not in training, without geo)"] = f'{val:.2%}'
-    Ser_review["Wasserstein-DCR"] = Wasserstein_distance_DCR
-
-    Ser_review.rename(f"{args.attributes_setname}_{args.folder_save_end}{term_evaluation}").to_csv(f"{dir_path_evaluation_generated_data}/overview_score.csv", sep=";", index_label="Metric")
