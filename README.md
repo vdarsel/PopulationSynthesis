@@ -21,7 +21,7 @@ git clone https://github.com/vdarsel/PopulationSynthesis.git
 
 ## Data preparation
 
-Download the file ``info.csv``, and either ``datasets_Individual_0_03.zip`` or ``datasets_Individual_1.zip``. In the former, the training dataset contains 0.03% of the total population, and 1% in the second. Move the dowloaded files to the data folder (Data>French_Census_Data_2021), and unzip the zip file.
+Preprocessed data from the French Census data of 2021 is available [here](https://data.mendeley.com/datasets/p2gcy7x7sd/1). Download either the file ``datasets_Individual_0_03.zip`` or the file ``datasets_Individual_1.zip``. In the former, the training dataset contains 0.03% of the total population, and 1% in the second. Move the dowloaded files to the data folder (Data>French_Census_Data_2021), and unzip the zip file.
 
 If you want to use your own dataset, more explanations on the format are given in the [Data Description](https://github.com/vdarsel/PopulationSynthesis/tree/main/data).
 
@@ -140,5 +140,6 @@ The architectures of the different models are given in the article [Robust and R
 
 # To be added soon
 - Direct Inflating (already implemented, documentation required)
+- LCA (already implemented, documentation required)
 - IPF
 - TVAE
