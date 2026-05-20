@@ -26,6 +26,8 @@ from models.Bayesian_Network.Hill_Climbing.BN_Hill_climb import train_sample_BN_
 
 from models.Bayesian_Network.Tree.BN_tree import train_sample_BN_tree
 
+from models.LCA.LCA import train_sample_LCA
+
 from models.Monte_Carlo_Markov_Chain.Frequentist.MCMC_frequentist import MCMC_frequentist_learn_sample
 
 from models.Monte_Carlo_Markov_Chain.Bayesian.MCMC_Bayesian import MCMC_Bayesian_learn_sample
@@ -182,6 +184,16 @@ class MCMC_Bayesian(Model_for_Population_Synthesis):
         MCMC_Bayesian_learn_sample(config, self.alpha, self.termination_saving())
     def termination_saving(self):
         return f"_MCMC_Bayesian_{f"{self.alpha}".replace(".","_")}"
+
+#####################################################
+###              LCA                 ###
+#####################################################
+
+class LCA(Model_for_Population_Synthesis):
+    def sample(self, config):
+        train_sample_LCA(config)
+    def termination_saving(self):
+        return "_LCA"
 
 #####################################################
 ###              Bayesian Network                 ###

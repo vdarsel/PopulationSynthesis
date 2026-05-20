@@ -26,6 +26,7 @@ if __name__ == '__main__':
     parser.add_argument("--beta_VAE_embedded", action='store_true')
     parser.add_argument("--BN_hill", action='store_true')
     parser.add_argument("--BN_tree", action='store_true')
+    parser.add_argument("--LCA", action='store_true')
     parser.add_argument("--MCMC_frequence", action='store_true')
     parser.add_argument("--MCMC_Bayesian", action='store_true')
     parser.add_argument("--Direct_Inflating", action='store_true')
@@ -112,6 +113,10 @@ if __name__ == '__main__':
         
     if(args.BN_tree):
         model = Bayesian_Network_tree()
+        models.append(model)
+        
+    if(args.LCA):
+        model = LCA()
         models.append(model)
         
     if(args.MCMC_frequence):
