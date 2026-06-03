@@ -1,6 +1,6 @@
 # Data Presentation
 
-The code is with a publicly and full-scale dataset, that can be download here: [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/3). The code is designed to generate a population at the **individual-level**. 
+The code is with a publicly and full-scale dataset, that can be download here: [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/3). The code is designed to generate a population at the **individual-level**. To run the code, download the datasets, extract the files and copy the extracted files (not the folders) to this repository. 
 
 The code is designed to handle data at the **individual-level** in the format of [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/3)., and put in the Data folder.
 
@@ -10,7 +10,7 @@ The code is designed to handle data at the **individual-level** in the format of
 The size of the available data varies depending on the data providers. 
 In the published data, two data scenarios are presented that differ by the size of the training dataset:
 
-- At 0.03% of the total population, this scenario mimics cases where the amount of data is minimal (Household Travel Survey at the national level) 0
+- At 0.03% of the total population, this scenario mimics cases where the amount of data is minimal (Household Travel Survey at the national level).
 - At 1% of the total population, this scenario corresponds to a Household Travel Survey at a narrower geographical scale, or Census data thourgh Public Use Microdata Sample (PUMS).
 
 
@@ -51,3 +51,4 @@ Different data scenarios are provided to test different model complexities.
 
 # Note
 - A data paper is in preparation for further details on the data collection, processing, and how to use it.
+- Before launching the experiments, this folder should contain the three following files: ``testing_dataset_Individual_0_03.csv``, ``testing_dataset_Individual_0_03_equal_size_training.csv``, and ``training_dataset_Individual_0_03.csv`` at 0.03% (or ``testing_dataset_Individual_1.csv``, ``testing_dataset_Individual_1_equal_size_training.csv``, and ``training_dataset_Individual_1.csv`` if working at 1%).
