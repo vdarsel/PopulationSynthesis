@@ -2,7 +2,7 @@ filename_training: "training_dataset_Individual_1.csv"
 filename_test: "testing_dataset_Individual_1.csv"
 filename_test_WDCR: "testing_dataset_Individual_1_equal_size_training.csv"
 
-folder_save_end: "1%"
+sample_folder_size: "1%"
 
 ##########################
 ### Data preprocessing ###
