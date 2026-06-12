@@ -81,7 +81,7 @@ def decode_Transformer_VAE(args, term):
     ### Process data ###
     ####################
 
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split('.'))
+    filename_sampling = f"generated_population_{n_sample}.csv"
     sampling_file = f'{folder_sampling}/{filename_sampling}'
 
     training_data, _ = preprocessing_cat_data_dataframe_sampling(training_data, min_size_category, name_cat)

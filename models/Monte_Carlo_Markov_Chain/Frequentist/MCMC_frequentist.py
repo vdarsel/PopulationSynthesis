@@ -69,7 +69,7 @@ def MCMC_frequentist_learn_sample(args):
     
     dataset_path = f'{datapath}/{dataname}/{filename_training}'
         
-    filename_sampling = (args.sampling_terminaison+"_"+str(n_sample)+term+".").join(filename_training.split('.'))
+    filename_sampling = f"generated_population_{n_sample}.csv"
 
     folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
     sampling_file = f'{folder_sampling}/{filename_sampling}'
