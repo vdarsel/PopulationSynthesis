@@ -82,6 +82,12 @@ def generate_plot_plotly(proportion_sample, proportion_ref, combi_names, values,
 
 
 def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_file, df_for_evaluation, dataset_test_df, dataset_test_df_dcr, dataset_reference_training, df_info, dir_path_save_results=None, save=False):
+    
+    ########################
+    ### Initiate results ###
+    ########################
+        
+    
     Ser_review = pd.Series(index=["\overline{SRMSE}_1","\overline{SRMSE}_2","\overline{SRMSE}_3",
                      "\overline{Hellinger}_1","\overline{Hellinger}_2","\overline{Hellinger}_3",
                      "SRMSE_1","SRMSE_2","SRMSE_3",
@@ -223,9 +229,11 @@ def full_evaluation(args, term_evaluation=""):
     
     if not os.path.isdir(dir_path_evaluation_generated_data):
         os.makedirs(dir_path_evaluation_generated_data)
-    n_samples = args.n_generation
+        
+    n_sample = args.n_generation
     
-    filename_sampling = filename_training.split(".")[0]+(args.sampling_terminaison+"_"+str(n_samples)+term_evaluation)
+    filename_sampling = f"generated_population_{n_sample}.csv"
+
     basename = f"{dir_path_generated_data}/{filename_sampling}"
     folder_proportion_file_generated_data = f"{dir_path_evaluation_generated_data}/Proportion_save/"
     if not os.path.isdir(folder_proportion_file_generated_data):
@@ -235,25 +243,6 @@ def full_evaluation(args, term_evaluation=""):
     file_test_WDCR = f"{datapath}/{args.dataset_evaluation}/{args.filename_test_WDCR.split(".csv")[0]+args.special_model+".csv"}"
     file_train = f"{datapath}/{args.dataname}/{filename_training}"
         
-    ########################
-    ### Initiate results ###
-    ########################
-    
-    Ser_review = pd.Series(index=["\overline{SRMSE}_1","\overline{SRMSE}_2","\overline{SRMSE}_3",
-                     "\overline{Hellinger}_1","\overline{Hellinger}_2","\overline{Hellinger}_3",
-                     "SRMSE_1","SRMSE_2","SRMSE_3",
-                     "Hellinger_1","Hellinger_2","Hellinger_3",
-                     "Pearson_1","Pearson_2","Pearson_3",
-                     "R2_1","R2_2","R2_3",
-                     "Rate of copies (training)", "Rate of copies (training, without geo)",
-                     "Rate of copies (in testing not in training)", "Rate of copies (in testing not in training, without geo)",
-                     "SSCIOD", "SSCIOD (without geo)"
-                     ], dtype=str)
-
-    dict_title = {1:"Marginal", 2:"Bivariate", 3:"Trivariate"}
-    df_scores_median = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
-    df_scores_mean = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
-    df_scores_agg = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
     
     #################
     ### Load data ###
@@ -263,9 +252,6 @@ def full_evaluation(args, term_evaluation=""):
     df_info = df_info[df_info[attr_setname]]
 
     columns = df_info["Variable_name"].to_numpy()
-    columns_without_geo = df_info[(~df_info["Geographical_attribute"])]["Variable_name"]
-
-    idx_num = np.arange(len(df_info))[(df_info["Type"].isin(["int","float"]))]
     name_cat = df_info["Variable_name"][(df_info["Type"].isin(["binary","boolean","category"]))].to_list()
 
     def load_data(filename, df_info):
