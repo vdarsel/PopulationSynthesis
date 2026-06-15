@@ -7,6 +7,7 @@ from torch.utils.data import Dataset
 import pandas as pd
 import torch
 
+from utils.utils_dir import get_ckpt_dir
 
 def preprocessing_cat_data(X_cat: dict[np.ndarray], X_num: dict[np.ndarray], min_size, idx, method):
     if(len(idx)>0):
@@ -199,8 +200,10 @@ def make_dataset(
 
 def get_input_embedded_training_data(args):
 
-    embedding_save_path = f'ckpt/{args.folder_save}/train_z.npy' 
-    embedding_validation_save_path = f'ckpt/{args.folder_save}/validation_z.npy' 
+    ckpt_dir = get_ckpt_dir(args)
+    
+    embedding_save_path = f'{ckpt_dir}\\train_z.npy' 
+    embedding_validation_save_path = f'{ckpt_dir}\\validation_z.npy' 
     
     train_z = torch.tensor(np.load(embedding_save_path)).float()
     validation_z = torch.tensor(np.load(embedding_validation_save_path)).float()
