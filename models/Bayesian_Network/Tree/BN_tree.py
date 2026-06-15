@@ -1,6 +1,7 @@
 import networkx as nx
 import matplotlib.pyplot as plt
 
+from time import time
 import pandas as pd
 import os
 
@@ -10,6 +11,12 @@ from pgmpy.estimators import TreeSearch
 
 from utils.utils_train import transform_num_into_bins, transform_num_into_quantiles
 from utils.utils_sample import preprocessing_cat_data_dataframe_sampling, bins_to_values
+
+from utils.utils_dir import get_data_dir, get_folder_sampling, get_file_path_sampling
+from utils.utils_import import get_info_file, import_data
+
+from utils.utils_time import save_time
+
 
 
 def train_sample_BN_tree(args):
@@ -21,36 +28,30 @@ def train_sample_BN_tree(args):
     ##################
     
     term = "_Bayesian_Network_Tree"
-    datapath = "Data"
-    dataname = args.dataname
-    filename_training = args.filename_training
-    infoname = args.infoname
-    attr_setname = args.attributes_setname
+    
+    t0 = time()
+    
     n_sample = args.n_generation
-
-    info_path = f'{datapath}/{dataname}/{infoname}'
     
-    dataset_path = f'{datapath}/{dataname}/{filename_training}'
-        
-    filename_sampling = f"generated_population_{n_sample}.csv"
-
-    folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
-    sampling_file = f'{folder_sampling}/{filename_sampling}'
+    filename_training = args.filename_training
     
-    if (not os.path.exists(folder_sampling)):
-        os.makedirs(folder_sampling)
+    data_dir = get_data_dir(args)
 
+    folder_sampling = get_folder_sampling(args, term)
+    sampling_file = get_file_path_sampling(args, term)
+    
     #################
     ### Load Data ###
     #################
     
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name", "Bin_size"]]
+    info = get_info_file(args)[["Type", "Variable_name", "Bin_size"]]
     
     name_cat = info[info["Type"].isin(["binary","category","boolean"])].reset_index()["Variable_name"]
     name_num = info[info["Type"].isin(["int","float"])].reset_index()["Variable_name"]
-        
-    df_data = pd.read_csv(dataset_path, sep=";", low_memory=False)[info["Variable_name"]].astype(str)
+
+    columns = info["Variable_name"]
+    
+    df_data = import_data(f"{data_dir}\\{filename_training}", columns, columns) # All variables are treated as categorical
     
     df_data, _ = preprocessing_cat_data_dataframe_sampling(df_data, args.transform.cat_min_count, name_cat)
     
@@ -72,7 +73,7 @@ def train_sample_BN_tree(args):
     nx.draw_circular(
         best_model, with_labels=True, arrowsize=30, node_size=800, alpha=0.3, font_weight="bold"
     )
-    plt.savefig(f"{folder_sampling}/best_graph.png")
+    plt.savefig(f"{folder_sampling}\\best_graph.png")
     plt.close()
     
     ########################
@@ -85,6 +86,8 @@ def train_sample_BN_tree(args):
     ###################
     ### Sample Data ###
     ###################    
+    
+    save_time(t0, args, term)
     
     df_sample = (BayesianModelSampling(model).forward_sample(n_sample))
 
