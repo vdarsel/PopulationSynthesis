@@ -6,7 +6,11 @@ from torch.optim.lr_scheduler import ReduceLROnPlateau
 from tqdm import tqdm
 import time
 
-def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
+from utils.utils_dir import get_model_torch_path
+from utils.utils_time import save_time
+
+
+def train_Diffusion_from_embedded_data(args, term, projection_dim = 1024):
 
     print("\n\nTraining Diffusion on embedded data\n\n")
 
@@ -16,7 +20,7 @@ def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
     
     device = args.device
     
-    name_model = f"model_diffusion_{projection_dim}"
+    name_model = get_model_torch_path(args, "model", term)
 
     batch_size = args.Diffusion_embedded.batch_size
 
@@ -28,8 +32,6 @@ def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
 
     train_z,validation_z = get_input_embedded_training_data(args)
 
-    path_model_save = f'ckpt/{args.folder_save}'
-
     in_dim = train_z.shape[1]
 
     mean, std = train_z.mean(0), train_z.std(0)
@@ -39,7 +41,6 @@ def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
     validation_z = (validation_z - mean) / 2 #center data on 0 with the same range
     validation_data = validation_z
     validation_data = torch.tensor(validation_data).to(device)
-    path_time = f'ckpt/{args.folder_save}/training_time_Diffusion_from_embedded_data_{projection_dim}.txt'
 
     train_loader = DataLoader(
         train_data,
@@ -117,7 +118,7 @@ def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
             if curr_loss < best_loss:
                 best_loss = loss.item()
                 patience = 0
-                torch.save(model.state_dict(), f'{path_model_save}/{name_model}.pt')
+                torch.save(model.state_dict(), name_model)
             else:
                 patience += 1
                 if patience == args.Diffusion_embedded.patience_max:
@@ -125,9 +126,8 @@ def train_Diffusion_from_embedded_data(args, projection_dim = 1024):
                     break
 
         if epoch % 1000 == 0:
-            torch.save(model.state_dict(), f'{path_model_save}/{name_model}_{epoch}.pt')
+            name_model_1000 = get_model_torch_path(args, "model", f"{term}_{epoch}")
 
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
+            torch.save(model.state_dict(), name_model_1000)
+            
+    save_time(start_time, args, term)

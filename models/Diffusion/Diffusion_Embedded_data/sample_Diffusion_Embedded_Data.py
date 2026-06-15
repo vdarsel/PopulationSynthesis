@@ -8,8 +8,11 @@ from utils.utils_train import get_input_embedded_training_data
 from utils.utils_diffusion import sample
 from tqdm import tqdm
 
+from utils.utils_dir import get_encoded_filename
+from utils.utils_import import import_torch_model
 
-def sample_Diffusion_from_embedded_data(args, projection_dim = 1024):
+
+def sample_Diffusion_from_embedded_data(args, term, projection_dim = 1024):
     
     print("\n\nSampling Diffusion model on embedded data\n\n")
 
@@ -17,13 +20,8 @@ def sample_Diffusion_from_embedded_data(args, projection_dim = 1024):
     ### Parameters ###
     ##################
     
-    term = f"_diffusion_{projection_dim}"
-        
-    name_model = f"model_diffusion_{projection_dim}"
-
     device = args.device
 
-    path_model = f'ckpt/{args.folder_save}'
     n_batch = args.batch_size_generation
         
     n = int(np.ceil(args.n_generation/n_batch))
@@ -47,7 +45,7 @@ def sample_Diffusion_from_embedded_data(args, projection_dim = 1024):
     ### Import Model ###
     ####################
 
-    import_model = torch.load(f'{path_model}/{name_model}.pt')
+    import_model = import_torch_model(args, "model", term)
 
     denoise_fn = MLPDiffusion(in_dim, projection_dim).to(device)
 
@@ -76,4 +74,5 @@ def sample_Diffusion_from_embedded_data(args, projection_dim = 1024):
     ### Save embeded data ###
     #########################
 
-    np.save(f'ckpt/{args.folder_save}/encoded_generated{term}.npy', res)
+    
+    np.save(get_encoded_filename(args, term), res)
