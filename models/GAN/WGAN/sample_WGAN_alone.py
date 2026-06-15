@@ -8,6 +8,9 @@ from utils.utils_sample import get_categories_inverse, get_normalizer_num, prepr
 import shutil
 import pandas as pd
 
+from utils.utils_dir import get_data_dir, get_folder_sampling, get_file_path_sampling
+from utils.utils_import import get_info_file, import_data, import_torch_model
+
 def sample_WGAN_alone(args, term, k = 256):
     
     print("\n\nSampling WGAN model on raw data\n\n")
@@ -17,19 +20,14 @@ def sample_WGAN_alone(args, term, k = 256):
     ##################
     
     n_sample = args.n_generation
-    datapath = "Data"
-    dataname = args.dataname
+    
     filename_training = args.filename_training
-    infoname = args.infoname
-    attr_setname = args.attributes_setname
     device = args.device
-    data_dir = f'{datapath}/{dataname}'
-        
-    filename_sampling = f"generated_population_{n_sample}.csv"
-    folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
-    sampling_file = f'{folder_sampling}/{filename_sampling}'
-
-    path_model = f'ckpt/{args.folder_save}'
+    
+    data_dir = get_data_dir(args)
+    
+    folder_sampling = get_folder_sampling(args, term)
+    sampling_file = get_file_path_sampling(args, term)
 
     T_dict = {}
 
@@ -38,9 +36,7 @@ def sample_WGAN_alone(args, term, k = 256):
     T_dict['cat_nan_policy'] =  args.transform.cat_nan_policy
     T_dict['cat_min_count'] = args.transform.cat_min_count
     T_dict['cat_encoding'] = args.transform.cat_encoding
-    
-    info_path = f'{datapath}/{dataname}/{infoname}'
-    
+        
     training_file = f'{data_dir}/{filename_training}'
 
     n_batch = args.batch_size_generation
@@ -53,8 +49,7 @@ def sample_WGAN_alone(args, term, k = 256):
     ### Load Data ###
     #################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]].reset_index()
+    info = get_info_file(args)[["Type", "Variable_name"]]
 
 
     name_cat = info[info["Type"].isin(["binary","category","bool"])].reset_index()["Variable_name"]
@@ -62,9 +57,8 @@ def sample_WGAN_alone(args, term, k = 256):
     idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
 
 
-    training_data = pd.read_csv(training_file, sep = ";", low_memory=False)[info["Variable_name"]]
-    for idx in name_cat:
-        training_data[idx] = training_data[idx].astype(str)
+    training_data = import_data(training_file,info["Variable_name"], name_cat)
+    
     
     training_data,_ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
     training_data = process_nans(training_data.to_numpy(), idx_num, idx_cat, T_dict['num_nan_policy'], T_dict['cat_nan_policy'])
@@ -81,7 +75,7 @@ def sample_WGAN_alone(args, term, k = 256):
     ### Import Model ###
     ####################
 
-    import_model = torch.load(f'{path_model}/generator_WGAN_{k}.pt')
+    import_model = import_torch_model(args, "generator", term)
 
     model = Generator_Tabular(categories, d_numerical,k).to(device)
 

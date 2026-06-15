@@ -7,6 +7,9 @@ from tqdm import tqdm
 import time
 import numpy as np
 
+from utils.utils_dir import get_model_torch_path
+from utils.utils_time import save_time
+
 
 def train_WGAN_embedding_data(args, term, k=256):
     
@@ -18,13 +21,9 @@ def train_WGAN_embedding_data(args, term, k=256):
 
     device = args.device
 
-    cktp_dir = 'ckpt'
+    generator_path_save = get_model_torch_path(args, "generator", term)
+    discriminator_path_save = get_model_torch_path(args, "discriminator", term)
 
-    path_save = f'{cktp_dir}/{args.folder_save}'
-    path_time = f'{cktp_dir}/{args.folder_save}/training_time{term}.txt'
-
-    if (not os.path.exists(path_save)):
-        os.makedirs(path_save)
 
     num_epochs = args.WGAN_embedded.n_epochs
     num_epochs_D = args.WGAN_embedded.n_epochs_Discriminator
@@ -130,7 +129,6 @@ def train_WGAN_embedding_data(args, term, k=256):
 
                 pred_fake = discriminator_net(fake_data)
 
-                # loss_G = fn_GAN(pred_fake, torch.ones_like(pred_fake))
                 loss_G = -torch.mean(pred_fake)
 
                 loss_G.backward()
@@ -151,10 +149,7 @@ def train_WGAN_embedding_data(args, term, k=256):
     ### Save Model ###
     ##################
 
-    torch.save(generator_net.state_dict(),f'{path_save}/generator{term}.pt')
-    torch.save(discriminator_net.state_dict(),f'{path_save}/discriminator{term}.pt')
+    torch.save(generator_net.state_dict(), generator_path_save)
+    torch.save(discriminator_net.state_dict(), discriminator_path_save)
 
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
+    save_time(start_time, args, term)

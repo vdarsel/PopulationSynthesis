@@ -10,6 +10,10 @@ import numpy as np
 import pandas as pd
 import torch.nn.functional as F
 
+from utils.utils_dir import get_data_dir, get_model_torch_path
+from utils.utils_import import get_info_file, import_data
+from utils.utils_time import save_time
+
 def train_WGAN_alone(args, term, k=256):
     
     print("\n\nTraining WGAN on raw data\n\n")
@@ -18,21 +22,15 @@ def train_WGAN_alone(args, term, k=256):
     ### Parameters ###
     ##################
 
-    datapath = "Data"
-    dataname = args.dataname
     filename_training = args.filename_training
-    infoname = args.infoname
-    save_folder = args.folder_save
-    attr_setname = args.attributes_setname
-    
-    info_path = f'{datapath}/{dataname}/{infoname}'
 
-    data_dir = f'{datapath}/{dataname}'
+    data_dir = get_data_dir(args)
+    
     device = args.device
-    
-    path_model_save = f'ckpt/{save_folder}'
 
-    path_time = f'ckpt/{args.folder_save}/training_time{term}.txt'
+    path_generator_save = get_model_torch_path(args, "generator", term)
+    path_discriminator_save = get_model_torch_path(args, "discriminator", term)
+
 
     T_dict = {}
 
@@ -51,8 +49,7 @@ def train_WGAN_alone(args, term, k=256):
     ### Load Data ###
     #################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]]
+    info = get_info_file(args)[["Type", "Variable_name"]]
 
     name_cat = info["Variable_name"][info["Type"].isin(["binary","category", "bool"])].to_list()
     
@@ -61,9 +58,7 @@ def train_WGAN_alone(args, term, k=256):
     
     training_file = f"{data_dir}/{filename_training}"
     
-    training_data = pd.read_csv(training_file, sep = ";")[info["Variable_name"]]
-    for idx in name_cat:
-        training_data[idx] = training_data[idx].astype(str)
+    training_data = import_data(training_file, info["Variable_name"], name_cat)
     
     training_data,_ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
 
@@ -195,13 +190,7 @@ def train_WGAN_alone(args, term, k=256):
     ### Save Model ###
     ##################
 
-    if (not os.path.isdir(path_model_save)):
-        os.makedirs(path_model_save)
-        
-    torch.save(generator_net.state_dict(),f'{path_model_save}/generator{term}.pt')
-    torch.save(discriminator_net.state_dict(),f'{path_model_save}/discriminator{term}.pt')
+    torch.save(generator_net.state_dict(),path_generator_save)
+    torch.save(discriminator_net.state_dict(), path_discriminator_save)
 
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
+    save_time(start_time, args, term)
