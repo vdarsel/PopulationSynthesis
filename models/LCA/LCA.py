@@ -4,8 +4,15 @@ import pandas as pd
 import os
 import numpy as np
 
+from time import time
+
 from utils.utils_train import transform_num_into_bins, transform_num_into_quantiles
 from utils.utils_sample import preprocessing_cat_data_dataframe_sampling, bins_to_values
+
+from utils.utils_dir import get_data_dir, get_folder_sampling, get_file_path_sampling
+from utils.utils_import import get_info_file, import_data
+
+from utils.utils_time import save_time
 
 def data_to_numpy(data):
     res = np.zeros(data.shape, int)
@@ -186,37 +193,34 @@ def train_sample_LCA(args):
     ##################
 
     term = "_LCA"
-    datapath = "Data"
-    dataname = args.dataname
-    filename_training = args.filename_training
-    infoname = args.infoname
-
-    attr_setname = args.attributes_setname
-    n_sample = args.n_generation
-
-    info_path = f'{datapath}/{dataname}/{infoname}'
     
-    dataset_path = f'{datapath}/{dataname}/{filename_training}'
-        
-    filename_sampling = f"generated_population_{n_sample}.csv"
-
-    folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
-    sampling_file = f'{folder_sampling}/{filename_sampling}'
+    t0 = time()
+    
+    n_sample = args.n_generation
+    
+    filename_training = args.filename_training
+    
+    data_dir = get_data_dir(args)
+    
+    folder_sampling = get_folder_sampling(args, term)
+    sampling_file = get_file_path_sampling(args, term)
     
     if (not os.path.exists(folder_sampling)):
         os.makedirs(folder_sampling)
+
 
     #################
     ### Load Data ###
     #################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name", "Bin_size"]]
+    info = get_info_file(args)[["Type", "Variable_name", "Bin_size"]]
     
     name_cat = info[info["Type"].isin(["binary","category","bool"])].reset_index()["Variable_name"]
     name_num = info[info["Type"].isin(["int","float"])].reset_index()["Variable_name"]
     
-    df_data = pd.read_csv(dataset_path, sep=";", low_memory=False)[info["Variable_name"]].astype(str)
+    columns = info["Variable_name"]
+    
+    df_data = import_data(f"{data_dir}\\{filename_training}", columns, columns) # All variables are treated as categorical
     
     df_data, _ = preprocessing_cat_data_dataframe_sampling(df_data, args.transform.cat_min_count, name_cat)
     
@@ -249,6 +253,7 @@ def train_sample_LCA(args):
     ### Sample Data ###
     ###################    
     
+    save_time(t0, args, term)
     
     df_sample = bins_to_values(df_sample, df_data, dict_translation_inverse, name_num)
 
