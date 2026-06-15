@@ -15,6 +15,10 @@ from utils.utils_train import preprocess, TabularDataset
 
 warnings.filterwarnings('ignore')
 
+from utils.utils_dir import get_data_dir, get_model_torch_path, get_ckpt_dir
+from utils.utils_import import get_info_file
+from utils.utils_time import save_time
+
 
 
 
@@ -49,14 +53,9 @@ def learn_encoding_Transformer_VAE(args):
     ### Parameters ###
     ##################
     
-    datapath = "Data"
-    dataname = args.dataname
     filename_training = args.filename_training
-    infoname = args.infoname
-    save_folder = args.folder_save
-    attr_setname = args.attributes_setname
 
-    data_dir = f'{datapath}/{dataname}'
+    data_dir = get_data_dir(args)
 
     max_beta = args.Transformer_VAE.max_beta
     min_beta = args.Transformer_VAE.min_beta
@@ -82,43 +81,24 @@ def learn_encoding_Transformer_VAE(args):
 
     device =  args.device
 
-    info_path = f'{datapath}/{dataname}/{infoname}'
-
 
     ####################
     ### Data loading ###
     ####################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]]
+    info = get_info_file(args)[["Type", "Variable_name"]]
 
     name_cat = info["Variable_name"][info["Type"].isin(["binary","cat", "bool", "category"])].to_list()
     name_num = info["Variable_name"][info["Type"].isin(["int","cont", "int64","float64"])].to_list()
 
 
-    # curr_dir = os.path.dirname(os.path.abspath(__file__))
-    ckpt_dir = f'ckpt/{save_folder}' 
-
-    if not os.path.exists(ckpt_dir):
-        os.makedirs(ckpt_dir)
-
-    model_save_path = f'{ckpt_dir}/model_Transformer_VAE.pt'
-    encoder_save_path = f'{ckpt_dir}/encoder_Transformer_VAE.pt'
-    decoder_save_path = f'{ckpt_dir}/decoder_Transformer_VAE.pt'
-    path_time = f'{ckpt_dir}/training_time_Transformer_VAE.txt'
+    ckpt_dir = get_ckpt_dir(args)
+    model_save_path =  get_model_torch_path(args, "model_Transformer_VAE","")
+    encoder_save_path =  get_model_torch_path(args, "encoder_Transformer_VAE","")
+    decoder_save_path =  get_model_torch_path(args, "decoder_Transformer_VAE","")
     
     X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename_training, name_cat, name_num, T_dict, )
     
-    # print(X_cat[1])
-    
-    # for j in range(X_cat[1].shape[1]):
-    #     unique_values_validation = np.unique(X_cat[1][:,j])
-    #     unique_values_training = np.unique(X_cat[0][:,j])
-    #     print(j, set(unique_values_validation).issubset(unique_values_training))
-    #     # for val in unique_values_validation:
-    #     #     X_cat[0][:,0]
-    # raise
-
     X_train_num, _ = X_num
     X_train_cat, _ = X_cat
 
@@ -249,11 +229,7 @@ def learn_encoding_Transformer_VAE(args):
 
         print('epoch: {}, beta = {:.6f}, Train MSE: {:.6f}, Train CE:{:.6f}, Train KL:{:.6f}, Val MSE:{:.6f}, Val CE:{:.6f}, Train ACC:{:6f}, Val ACC:{:6f}'.format(epoch, beta, num_loss, cat_loss, kl_loss, val_mse_loss.item(), val_ce_loss.item(), train_acc, val_acc.item() ))
 
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
-    
+    save_time(start_time, args, "Transformer_VAE")    
     
     ###################################
     ### Generate and save embedding ###
@@ -281,7 +257,7 @@ def learn_encoding_Transformer_VAE(args):
         X_validation_cat = X_validation_cat.to(device)
         validation_z = pre_encoder(X_validation_num, X_validation_cat).detach().cpu().numpy()
 
-        np.save(f'{ckpt_dir}/train_z.npy', train_z)
-        np.save(f'{ckpt_dir}/validation_z.npy', validation_z)
+        np.save(f'{ckpt_dir}\\train_z.npy', train_z)
+        np.save(f'{ckpt_dir}\\validation_z.npy', validation_z)
 
         print('Successfully save pretrained embeddings in disk!')
