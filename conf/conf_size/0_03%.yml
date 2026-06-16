@@ -2,6 +2,8 @@ filename_training: "training_dataset_Individual_0_03.csv"
 filename_test: "testing_dataset_Individual_0_03.csv"
 filename_test_WDCR: "testing_dataset_Individual_0_03_equal_size_training.csv"
 
+data_folder_size: "datasets_Individual_0_03" #name of the folder for the specific training size (https://data.mendeley.com/datasets/p2gcy7x7sd/)
+
 sample_folder_size: "0_03%"
 
 ##########################
@@ -96,6 +98,16 @@ beta_VAE_embedded_data:
 ############
 
 WGAN:
+  batch_size: 256
+  n_epochs_Discriminator: 10 # Train Discriminator alone in the first epoch to have a discriminator able to disciminate better than random
+  n_epochs: 1000 # There is no score on validation, x epochs are performed to get the model
+  freq_train_G: 5 # train the generator network each x epoch. The discriminative network is trained at each epoch
+
+######################
+### WGAN embedding ###
+######################
+
+WGAN_embedded:
   batch_size: 256
   n_epochs_Discriminator: 10 # Train Discriminator alone in the first epoch to have a discriminator able to disciminate better than random
   n_epochs: 1000 # There is no score on validation, x epochs are performed to get the model
