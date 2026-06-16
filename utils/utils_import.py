@@ -1,7 +1,7 @@
 import pandas as pd
 import torch
 
-from utils.utils_dir import get_info_path, get_ckpt_dir, get_model_torch_path
+from utils.utils_dir import get_info_path, get_model_torch_path
 
 def get_info_file(config):
     attr_setname = config.attributes_setname

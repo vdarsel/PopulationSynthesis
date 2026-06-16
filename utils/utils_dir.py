@@ -23,7 +23,7 @@ def get_testing_data_dir(config):
         return f'{datapath}\\{dataname_evaluation}'
 
 def get_ckpt_dir(config):
-    return f'ckpt\\{config.variable}\\{config.size_data_str}\\{config.folder_save}' 
+    return f'ckpt\\{config.folder_save}\\{config.size_data_str}' 
 
 def get_folder_sampling(config, term):
     res = f'{config.sample_folder}\\{config.variable}\\{config.size_data_str}\\{config.folder_save+term}'
