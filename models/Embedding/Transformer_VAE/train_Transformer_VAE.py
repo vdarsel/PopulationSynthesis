@@ -229,7 +229,7 @@ def learn_encoding_Transformer_VAE(args):
 
         print('epoch: {}, beta = {:.6f}, Train MSE: {:.6f}, Train CE:{:.6f}, Train KL:{:.6f}, Val MSE:{:.6f}, Val CE:{:.6f}, Train ACC:{:6f}, Val ACC:{:6f}'.format(epoch, beta, num_loss, cat_loss, kl_loss, val_mse_loss.item(), val_ce_loss.item(), train_acc, val_acc.item() ))
 
-    save_time(start_time, args, "Transformer_VAE")    
+    save_time(start_time, args, "_Transformer_VAE")    
     
     ###################################
     ### Generate and save embedding ###
