@@ -7,6 +7,9 @@ from utils.utils_sample import preprocessing_cat_data_dataframe_sampling
 from utils.utils_CTGAN.data_transformer import DataTransformer
 from models.VAE.TVAE.model_TVAE import Decoder_TVAE
 
+from utils.utils_dir import get_data_dir, get_ckpt_dir, get_folder_sampling, get_file_path_sampling
+from utils.utils_import import get_info_file, import_data, import_torch_model
+
 
 def sample_TVAE(args, beta, term, k=256): 
     
@@ -18,25 +21,16 @@ def sample_TVAE(args, beta, term, k=256):
     
     device = args.device
 
-    n_sample = args.n_generation
+    ckpt_dir = get_ckpt_dir(args)
 
-    save_folder = args.folder_save
-    attr_setname = args.attributes_setname
-    ckpt_dir = f'ckpt/{save_folder}' 
-
-    datapath = "Data"
-    dataname = args.dataname
     filename_training = args.filename_training
-    infoname = args.infoname
-    train_train_data_save_path = f'{ckpt_dir}/TVAE_{filename_training}_train_train_dim_{k}_beta_{beta}.csv'
 
-    data_dir = f'{datapath}/{dataname}'
+    train_train_data_save_path = f'{ckpt_dir}\\TVAE_{filename_training}_train_train_dim_{k}_beta_{beta}.csv'
 
-    info_path = f'{datapath}/{dataname}/{infoname}'
-    folder_sampling = f'{args.sample_folder}/{args.folder_save+term}'
-    
-    filename_sampling = f"generated_population_{n_sample}.csv"
-    sampling_file = f'{folder_sampling}/{filename_sampling}'
+    data_dir = get_data_dir(args)
+
+    folder_sampling = get_folder_sampling(args, term)   
+    sampling_file = get_file_path_sampling(args, term) 
 
     
     if (not os.path.isdir(folder_sampling)):
@@ -51,19 +45,13 @@ def sample_TVAE(args, beta, term, k=256):
     ### Load Data ###
     #################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]]
+    info = get_info_file(args)[["Type", "Variable_name"]]
 
     columns = info["Variable_name"]
     name_cat = info["Variable_name"][(info["Type"].isin(["binary","bool","category"]))].to_list()
 
-    dataset_train = pd.read_csv(f"{data_dir}/{filename_training}", sep=";", low_memory=False)[info["Variable_name"]]
-    dataset_train_train = pd.read_csv(train_train_data_save_path, sep=";", low_memory=False)[info["Variable_name"]]
-
-    dataset_train = dataset_train[columns]
-    for idx in name_cat:
-        dataset_train[idx] = dataset_train[idx].astype(str)
-        dataset_train_train[idx] = dataset_train_train[idx].astype(str)
+    dataset_train = import_data(f"{data_dir}\\{filename_training}", columns, name_cat)
+    dataset_train_train = import_data(train_train_data_save_path, columns, name_cat)
 
     min_size_category = args.transform.cat_min_count
 
@@ -79,7 +67,7 @@ def sample_TVAE(args, beta, term, k=256):
     ### Import Model ###
     ####################
 
-    import_model = torch.load(f'{ckpt_dir}/decoder_TVAE_dim_{k}_beta_{beta}.pt')
+    import_model = import_torch_model(args, "decoder", term)
 
     decoder = Decoder_TVAE(k, transformed_data_dim).to(device)
     decoder.load_state_dict(import_model)

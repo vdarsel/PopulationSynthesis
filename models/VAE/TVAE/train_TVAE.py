@@ -11,15 +11,19 @@ import os
 from tqdm import tqdm
 import time
 
-from utils.utils_train import TabularDataset
+from utils.utils_train import generate_train_validation_set
 from utils.utils_sample import preprocessing_cat_data_dataframe_sampling
 from utils.utils_CTGAN.data_transformer import DataTransformer
 from models.VAE.TVAE.model_TVAE import Encoder_TVAE, Decoder_TVAE, loss_function_TVAE
 
+from utils.utils_dir import get_data_dir, get_ckpt_dir, get_model_torch_path
+from utils.utils_import import get_info_file, import_data
+from utils.utils_time import save_time
+
 warnings.filterwarnings('ignore')
 
 
-def train_TVAE(args, beta, dim=256):
+def train_TVAE(args, beta, term, dim=256):
 
     print("\n\nTraining TVAE on raw data\n\n")
 
@@ -30,66 +34,59 @@ def train_TVAE(args, beta, dim=256):
     beta_str = beta
     beta = float(beta)
     
-    datapath = "Data"
-    dataname = args.dataname
-    filename = args.filename
-    infoname = args.infoname
-    save_folder = args.folder_save
-    attr_setname = args.attributes_setname
+    filename_training = args.filename_training
 
-    data_dir = f'{datapath}/{dataname}'
-
+    data_dir = get_data_dir(args)
 
     device =  args.device
 
-    info_path = f'{datapath}/{dataname}/{infoname}'
-
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]]
+    info = get_info_file(args)[["Type", "Variable_name"]]
 
     columns = info["Variable_name"]
     name_cat = info["Variable_name"][(info["Type"].isin(["binary","cat","bool","category"]))].to_list()
 
-    ckpt_dir = f'ckpt/{save_folder}' 
+    ckpt_dir = get_ckpt_dir(args)
+    
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir)
-    encoder_save_path = f'{ckpt_dir}/encoder_TVAE_dim_{dim}_beta_{beta_str}.pt'
-    decoder_save_path = f'{ckpt_dir}/decoder_TVAE_dim_{dim}_beta_{beta_str}.pt'
-    path_time = f'{ckpt_dir}/training_time_TVAE.txt'
+        
+    encoder_save_path = get_model_torch_path(args, "encoder", term)
+    decoder_save_path = get_model_torch_path(args, "decoder", term)
+    training_data_save_path = f'{ckpt_dir}\\TVAE_{filename_training}_train_train_dim_{dim}_beta_{beta_str}.csv'
+
+    path_time = f'{ckpt_dir}\\training_time_TVAE.txt'
 
     ###################
     ### Import Data ###
     ###################
 
-    dataset_train = pd.read_csv(f"{data_dir}/{filename}", sep=";", index_col="Original_index", low_memory=False)[info["Variable_name"]]
-    dataset_train_train = pd.read_csv(f"{data_dir}/{filename.replace("_train.csv","_train_train.csv")}", sep=";", index_col="Original_index", low_memory=False)[info["Variable_name"]]
-    dataset_train_validation = pd.read_csv(f"{data_dir}/{filename.replace("_train.csv","_train_validation.csv")}", sep=";", index_col="Original_index", low_memory=False)[info["Variable_name"]]
-
-    dataset_train = dataset_train[columns]
-    for idx in name_cat:
-        dataset_train[idx] = dataset_train[idx].astype(str)
-        dataset_train_train[idx] = dataset_train_train[idx].astype(str)
-        dataset_train_validation[idx] = dataset_train_validation[idx].astype(str)
+    dataset_train = import_data(f"{data_dir}\\{filename_training}", columns, name_cat)
+        
+    idx_training, idx_validation = generate_train_validation_set(dataset_train[name_cat])
 
     min_size_category = args.transform.cat_min_count
 
-    dataset_train, dfs  = preprocessing_cat_data_dataframe_sampling(dataset_train, min_size_category, name_cat, [dataset_train_train, dataset_train_validation])
-    dataset_train_train, dataset_train_validation = dfs
+    dataset_train, dfs  = preprocessing_cat_data_dataframe_sampling(dataset_train, min_size_category, name_cat)
     
     for idx in name_cat:
         dataset_train[idx] = dataset_train[idx].astype("category")
 
+    dataset_train_train, dataset_train_validation = dataset_train.iloc[idx_training],dataset_train.iloc[idx_validation]
+    
     transformer_data = DataTransformer()
+    dataset_train_train_for_saving = dataset_train_train.copy()
     transformer_data.fit(dataset_train_train, name_cat)
     dataset_train_train = transformer_data.transform(dataset_train_train)
     dataset_train_validation = transformer_data.transform(dataset_train_validation)
+    
+    
 
     dataset_train_train = TensorDataset(torch.from_numpy(dataset_train_train.astype('float32')).to(device))
     data_validation = torch.from_numpy(dataset_train_validation.astype('float32')).to(device)
     loader = DataLoader(dataset_train_train, batch_size=args.TVAE.batch_size, shuffle=True, drop_last=False)
 
     transformed_data_dim = transformer_data.output_dimensions
-    
+        
     ######################
     ### Initiate Model ###
     ######################
@@ -198,11 +195,8 @@ def train_TVAE(args, beta, dim=256):
     ### Save Model ###
     ##################
     
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
-
+    save_time(start_time, args, term)
     
     torch.save(decoder.state_dict(), decoder_save_path)
     torch.save(encoder.state_dict(), encoder_save_path)
+    dataset_train_train_for_saving.to_csv(training_data_save_path, sep=";", index=False)
