@@ -1,8 +1,8 @@
 # Data Presentation
 
-The code is with a publicly and full-scale dataset, that can be download here: [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/3). The code is designed to generate a population at the **individual-level**. To run the code, download the datasets, extract the files and copy the extracted files (not the folders) to this repository. 
+The code is with a publicly and full-scale dataset, that can be download here: [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/). The code is designed to generate a population at the **individual-level**. To run the code, download the datasets, extract the files and copy the extracted files (not the folders) to this repository. 
 
-The code is designed to handle data at the **individual-level** in the format of [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/3)., and put in the Data folder.
+The code is designed to handle data at the **individual-level** in the format of [Data](https://data.mendeley.com/datasets/p2gcy7x7sd/)., and put in the Data folder.
 
 
 ## Training data size
@@ -51,4 +51,4 @@ Different data scenarios are provided to test different model complexities.
 
 # Note
 - A data paper is in preparation for further details on the data collection, processing, and how to use it.
-- Before launching the experiments, this folder should contain the three following files: ``testing_dataset_Individual_0_03.csv``, ``testing_dataset_Individual_0_03_equal_size_training.csv``, and ``training_dataset_Individual_0_03.csv`` at 0.03% (or ``testing_dataset_Individual_1.csv``, ``testing_dataset_Individual_1_equal_size_training.csv``, and ``training_dataset_Individual_1.csv`` if working at 1%).
+- Before launching the experiments, this folder should contain the unzip folders downloaded [here](https://data.mendeley.com/datasets/p2gcy7x7sd/)``datasets_Individual_0_03`` for the 0.03% case ``datasets_Individual_1`` for the 1% case.

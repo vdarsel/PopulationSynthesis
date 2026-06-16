@@ -77,9 +77,9 @@ python full_process.py --variable socio --size_data 1 --BN_hill --MCMC_freq --Di
 
 ## Analyze the results (Output Structure)
 
-In the default configuration, the generated population is saved in ```Results>Generated_data>French_Census_Data_2021_NAME_set_SIZE%_MODEL```, and the scores are saved in ```Results>Generated_data>French_Census_Data_2021_NAME_set_SIZE%_MODEL>French_Census_Data_2021>scores.csv```. The population is saved in a file named ```TRAINING-FILE_NAME_N_MODEL```, where ```TRAINING-FILE_NAME``` is the name of the training file, and ```N``` is thesize of the generated population. 
+In the default configuration, the generated population is saved in ```Results>Generated_data>French_Census_Data_2021_NAME>SIZE%>French_Census_Data_2021_MODEL```, and the scores are saved in ```Results>Generated_data>French_Census_Data_2021_NAME>SIZE%>French_Census_Data_2021_MODEL>overview_score.csv```. The population is saved in a file named ```generated_population_N```, where ```N``` is the size of the generated population. 
 
-For a quick model comparison following the metrics proposed in [Robust and Reproducible Evaluation Framework for Population Synthesis Models—Application to Probabilistic and Deep Generative Models.](https://dx.doi.org/10.2139/ssrn.5295092), the file ```Results>Generated_data>quick_comparison.csv``` summaries the scores for the 3 metrics: $\overline{SRMSE}_3$; $SSCIOD$; and $WDCR$.
+For a quick model comparison following the metrics proposed in [Robust and Reproducible Evaluation Framework for Population Synthesis Models—Application to Probabilistic and Deep Generative Models.](https://dx.doi.org/10.2139/ssrn.5295092), the file ```Results>Generated_data>French_Census_Data_2021_NAME>SIZE%>quick_comparison.csv``` summaries the scores for the 3 metrics: $\overline{SRMSE}_3$; $SSCIOD$; and $WDCR$.
 
 # Models
 
