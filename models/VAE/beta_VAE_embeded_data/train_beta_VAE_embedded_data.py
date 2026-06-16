@@ -11,6 +11,9 @@ import warnings
 from tqdm import tqdm
 import time
 
+from utils.utils_dir import get_model_torch_path
+from utils.utils_time import save_time
+
 warnings.filterwarnings('ignore')
 
 def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
@@ -57,8 +60,6 @@ def train_beta_VAE_from_embedded_data(args, beta, term, dim):
     train_z,validation_z = get_input_embedded_training_data(args)
 
 
-    path_model_save = f'ckpt/{args.folder_save}'
-
     in_dim = train_z.shape[1]
 
     mean, std = train_z.mean(0), train_z.std(0)
@@ -68,7 +69,6 @@ def train_beta_VAE_from_embedded_data(args, beta, term, dim):
     validation_z = (validation_z - mean) / 2 #center dat on 0 with the same range
     validation_data = validation_z
     validation_data = torch.tensor(validation_data).to(device)
-    path_time = f'ckpt/{args.folder_save}/training_time{term}.txt'
 
     train_loader = DataLoader(
         train_data,
@@ -95,7 +95,8 @@ def train_beta_VAE_from_embedded_data(args, beta, term, dim):
     ###################
     
     model.train()
-    torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
+    path_model_save = get_model_torch_path(args, "model", term)
+    torch.save(model.state_dict(), path_model_save)
 
     best_loss = float('inf')
     current_lr = optimizer.param_groups[0]['lr']
@@ -144,7 +145,7 @@ def train_beta_VAE_from_embedded_data(args, beta, term, dim):
             if curr_loss < best_loss:
                 best_loss = curr_loss.item()
                 patience = 0
-                torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
+                torch.save(model.state_dict(), path_model_save)
             else:
                 patience += 1
                 if patience == args.beta_VAE_embedded_data.patience_max:
@@ -155,8 +156,5 @@ def train_beta_VAE_from_embedded_data(args, beta, term, dim):
     ##################
     ### Save Model ###
     ##################
-
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
+    
+    save_time(start_time, args, term)

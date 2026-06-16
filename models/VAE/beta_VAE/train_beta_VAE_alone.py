@@ -15,8 +15,11 @@ import warnings
 from tqdm import tqdm
 import time
 
-warnings.filterwarnings('ignore')
+from utils.utils_dir import get_data_dir, get_model_torch_path
+from utils.utils_import import get_info_file
+from utils.utils_time import save_time
 
+warnings.filterwarnings('ignore')
 
 
 
@@ -51,20 +54,14 @@ def train_beta_VAE_alone(args, beta, term, k=0):
     ### Parameters ###
     ##################
 
-    datapath = "Data"
-    dataname = args.dataname
     filename_training = args.filename_training
-    infoname = args.infoname
-    attr_setname = args.attributes_setname
-    info_path = f'{datapath}/{dataname}/{infoname}'
 
-    data_dir = f'{datapath}/{dataname}'
+    data_dir = get_data_dir(args)
+    
     device = args.device
 
-    path_model_save = f'ckpt/{args.folder_save}'
+    path_model_save = get_model_torch_path(args, "model", term)
 
-
-    path_time = f'ckpt/{args.folder_save}/training_time{term}.txt'
 
     T_dict = {}
 
@@ -82,12 +79,8 @@ def train_beta_VAE_alone(args, beta, term, k=0):
     ### Load Data ###
     #################
 
-    info = pd.read_csv(info_path, sep = ";")
-    info = info[info[attr_setname]][["Type", "Variable_name"]]
+    info = get_info_file(args)[["Type", "Variable_name"]]
     
-    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category", "bool"])]
-    idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
-
     name_num = info["Variable_name"][info["Type"].isin(["int","float"])].to_list()
     name_cat = info["Variable_name"][info["Type"].isin(["binary","category", "bool"])].to_list()
 
@@ -186,7 +179,7 @@ def train_beta_VAE_alone(args, beta, term, k=0):
             if curr_loss < best_loss:
                 best_loss = curr_loss.item()
                 patience = 0
-                torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
+                torch.save(model.state_dict(), path_model_save)
             else:
                 patience += 1
                 if patience == args.beta_VAE.patience_max:
@@ -195,16 +188,14 @@ def train_beta_VAE_alone(args, beta, term, k=0):
         print('epoch: {}, Train Loss:{:.6f}, Val Loss:{:.6f}'.format(epoch, batch_loss/len_input, val_loss.item()))
 
         if epoch % 100 == 0:
-            torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
+            path_model_save_epoch = get_model_torch_path(args, "model", f'{term}_{epoch}')
+            torch.save(model.state_dict(), path_model_save_epoch)
 
     
     ##################
     ### Save Model ###
     ##################
     
-    torch.save(model.state_dict(), f'{path_model_save}/model{term}.pt')
+    torch.save(model.state_dict(), path_model_save)
 
-    end_time = time.time()
-    message = 'Training time: {:.4f} mins'.format((end_time - start_time)/60)
-    with open(path_time, "w") as f:
-        f.write(message)
+    save_time(start_time, args, term)
