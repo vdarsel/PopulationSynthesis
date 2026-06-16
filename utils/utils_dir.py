@@ -10,13 +10,17 @@ def get_info_path(config):
 def get_data_dir(config):
     datapath = "Data"
     dataname = config.dataname
-    return f'{datapath}\\{dataname}'
+    return f'{datapath}\\{dataname}\\{config.data_folder_size}'
 
 
 def get_testing_data_dir(config):
     datapath = "Data"
     dataname = config.dataset_evaluation
-    return f'{datapath}\\{dataname}'
+    dataname_evaluation = config.dataname
+    if(dataname==dataname_evaluation):
+        return f'{datapath}\\{dataname}\\{config.data_folder_size}'
+    else:
+        return f'{datapath}\\{dataname_evaluation}'
 
 def get_ckpt_dir(config):
     return f'ckpt\\{config.variable}\\{config.size_data_str}\\{config.folder_save}' 
