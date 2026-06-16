@@ -7,8 +7,7 @@ dataset_evaluation: "French_Census_Data_2021"
 infoname: "info.csv"
 
 sample_folder: "results\\Generated_data"
-sampling_terminaison: "_socio"
 
-folder_save: "French_Census_Data_2021" #"Rescencement_2015_Basic_1%_bis"
+folder_save: "French_Census_Data_2021_socio" #"Rescencement_2015_Basic_1%_bis"
 
 attributes_setname: "Socio_set"  #possible values Basic_set	Socio_set	Extended_set Semi_Extended_set
