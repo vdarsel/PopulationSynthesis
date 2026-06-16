@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 import os
 
-from evaluation.proportion_sampling import compute_proportion_file_from_unique_array_and_df, recover_lists_from_dictionnary
+from evaluation.proportion_sampling import compute_proportion_file_from_unique_array_and_df, recover_lists_from_dictionnary, adapt_numerical_values
 from evaluation.metrics_proportion import get_df_scores_by_cat, get_scores_agg
 from evaluation.heatmap import generate_color_map_save, generate_color_map_filter_save
 from evaluation.metrics_privacy import Distance_to_Closest_Records,generate_histogram_DCR
@@ -10,6 +10,9 @@ from evaluation.metrics_originality import get_proportion_from_original_data_df,
 
 import matplotlib.pyplot as plt
 import plotly.graph_objects as go
+
+from utils.utils_import import get_info_file
+from utils.utils_dir import get_file_path_sampling, get_data_dir, get_testing_data_dir, get_folder_evaluation, get_filename_sampling
 
 CAT_RARE_VALUE = '__rare__'
 
@@ -34,7 +37,7 @@ def generate_histogram(df, path, i):
         plt.figure(figsize=[7,7])
         plt.hist(df[metric])
         plt.title(f'{metric} {i}')
-        plt.savefig(f"{path}/hist_{metric}_{i}.png")
+        plt.savefig(f"{path}\\hist_{metric}_{i}.png")
         plt.close()
     
 def generate_plot(proportion_sample, proportion_ref, path, i):
@@ -50,7 +53,7 @@ def generate_plot(proportion_sample, proportion_ref, path, i):
     plt.xlabel("Original data proportion")
     plt.ylabel("Sampled data proportion")
     plt.title(dict_title[i])
-    plt.savefig(f"{path}/comparison_{i}.png")
+    plt.savefig(f"{path}\\comparison_{i}.png")
     plt.close()
     generate_color_map_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_{i}",200)
     generate_color_map_filter_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_filter_{i}",2000, min_freq=1)
@@ -76,12 +79,12 @@ def generate_plot_plotly(proportion_sample, proportion_ref, combi_names, values,
                                 "Col1: %{customdata[0]}",
                                 "Col2: %{customdata[1]}",
                             ])))
-    fig.write_html(f"{path}/comparison_{i}.html")
+    fig.write_html(f"{path}\\comparison_{i}.html")
     generate_color_map_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_{i}",2000)
     generate_color_map_filter_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_filter_{i}",2000, min_freq=10)
 
 
-def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_file, df_for_evaluation, dataset_test_df, dataset_test_df_dcr, dataset_reference_training, df_info, dir_path_save_results=None, save=False):
+def output_serie_eval(dict_unique_values, basename_file_save, reference_DCR_file, proportion_test_file, df_for_evaluation, dataset_test_df, dataset_test_df_dcr, dataset_reference_training, df_info, dir_path_save_results=None, save=False):
     
     ########################
     ### Initiate results ###
@@ -108,13 +111,14 @@ def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_fi
     df_scores_mean = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
     df_scores_agg = pd.DataFrame(columns=["SRMSE","Hellinger","Pearson","R2"])
 
-    
     for i in range(1,4):    
         proportion_file = f"{basename_file_save}_{i}.npy"
         if (not os.path.isfile(proportion_file)):
             print("\nGenerate Proportion file for sample")
+            
+            df_for_evaluation_temp = adapt_numerical_values(df_for_evaluation,dict_unique_values, df_info)
             compute_proportion_file_from_unique_array_and_df(dict_unique_values,
-                    df_for_evaluation.astype(str),
+                    df_for_evaluation_temp.astype(str),
                     columns,
                     basename_file_save,
                     i,
@@ -136,7 +140,7 @@ def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_fi
         df_scores_by_cat = get_df_scores_by_cat(proportion, proportion_test, combi_list, combi_names, i)
         
         if save:
-            df_scores_by_cat.to_csv(f"{dir_path_save_results}/scores_by_cat_{i}.csv", sep=";")    
+            df_scores_by_cat.to_csv(f"{dir_path_save_results}\\scores_by_cat_{i}.csv", sep=";")    
             generate_histogram(df_scores_by_cat, dir_path_save_results, i)
             generate_plot(proportion, proportion_test, dir_path_save_results, i)
             generate_plot_plotly(proportion_concat, proportion_test_concat, combi_names_concat, values_test_concat, dir_path_save_results, i)
@@ -152,7 +156,11 @@ def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_fi
     if save:
         generate_histogram_DCR(df_DCR, dir_path_save_results)
     Wasserstein_distance_DCR = np.sqrt(1/(len(df_DCR)**2)*np.sum(np.power(df_DCR["DCR train"].sort_values().values - df_DCR["DCR test"].sort_values().values,2)))
-        
+    
+    
+    df_DCR_training_data = pd.read_csv(reference_DCR_file, sep=";")    
+    reference_WDCR = np.sqrt(1/(len(df_DCR_training_data)**2)*np.sum(np.power(df_DCR_training_data["DCR test"].values,2)))
+    
     rate_non_geo_list, rate_geo_list = [],[]
     for i in range(1,4):
         proportion_file = f"{basename_file_save}_{i}.npy"
@@ -166,9 +174,9 @@ def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_fi
         rate_geo_list.append(rate_geo)
 
     if save:
-        df_scores_agg.to_csv(f"{dir_path_save_results}/scores.csv", sep=";")
-        df_scores_mean.to_csv(f"{dir_path_save_results}/scores_mean.csv", sep=";")
-        df_scores_median.to_csv(f"{dir_path_save_results}/scores_median.csv", sep=";")
+        df_scores_agg.to_csv(f"{dir_path_save_results}\\scores.csv", sep=";")
+        df_scores_mean.to_csv(f"{dir_path_save_results}\\scores_mean.csv", sep=";")
+        df_scores_median.to_csv(f"{dir_path_save_results}\\scores_median.csv", sep=";")
 
     Ser_review["\overline{SRMSE}_1"] = f"{df_scores_mean["SRMSE"]["Marginal"] :.3g}"
     Ser_review["\overline{SRMSE}_2"] = f"{df_scores_mean["SRMSE"]["Bivariate"] :.3g}"
@@ -204,6 +212,7 @@ def output_serie_eval(dict_unique_values, basename_file_save, proportion_test_fi
     else:
         Ser_review["Rate of copies (in testing not in training, without geo)"] = f'{val:.2%}'
     Ser_review["Wasserstein-DCR"] = Wasserstein_distance_DCR
+    Ser_review["Wasserstein-DCR ratio"] = Wasserstein_distance_DCR/reference_WDCR
     
     return Ser_review
 
@@ -216,12 +225,11 @@ def full_evaluation(args, term_evaluation=""):
         
     if not ("special_model" in args.__dict__.keys()):
         args.special_model= ""
+        
+    dir_path_evaluation_generated_data = get_folder_evaluation(args, term_evaluation)
     
-    dir_path_generated_data = f"{args.sample_folder}/{args.folder_save+term_evaluation}"
-    
-    dir_path_evaluation_generated_data = f"{dir_path_generated_data}/{args.dataset_evaluation}"
-    
-    datapath = "Data"
+    datapath_training = get_data_dir(args)
+    datapath_testing = get_testing_data_dir(args)
     
     attr_setname = args.attributes_setname
     
@@ -229,27 +237,25 @@ def full_evaluation(args, term_evaluation=""):
     
     if not os.path.isdir(dir_path_evaluation_generated_data):
         os.makedirs(dir_path_evaluation_generated_data)
-        
-    n_sample = args.n_generation
-    
-    filename_sampling = f"generated_population_{n_sample}.csv"
+            
 
-    basename = f"{dir_path_generated_data}/{filename_sampling}"
-    folder_proportion_file_generated_data = f"{dir_path_evaluation_generated_data}/Proportion_save/"
+    filename = get_file_path_sampling(args, term_evaluation)
+    basename = get_filename_sampling(args)
+    
+    folder_proportion_file_generated_data = f"{dir_path_evaluation_generated_data}\\Proportion_save"
     if not os.path.isdir(folder_proportion_file_generated_data):
         os.makedirs(folder_proportion_file_generated_data)
-    basename_save = f"{folder_proportion_file_generated_data}/{filename_training.split(".csv")[0]+args.sampling_terminaison}_{str(args.n_generation)+term_evaluation}"
-    file_test = f"{datapath}/{args.dataset_evaluation}/{args.filename_test.split(".csv")[0]+args.special_model+".csv"}"
-    file_test_WDCR = f"{datapath}/{args.dataset_evaluation}/{args.filename_test_WDCR.split(".csv")[0]+args.special_model+".csv"}"
-    file_train = f"{datapath}/{args.dataname}/{filename_training}"
+    
+    file_test = f"{datapath_training}\\{args.filename_test.split(".csv")[0]+args.special_model+".csv"}"
+    file_test_WDCR = f"{datapath_testing}\\{args.filename_test_WDCR.split(".csv")[0]+args.special_model+".csv"}"
+    file_train = f"{datapath_testing}\\{filename_training}"
         
     
     #################
     ### Load data ###
     #################
 
-    df_info = pd.read_csv(f"{datapath}/{args.dataname}/{args.infoname}",sep=";")
-    df_info = df_info[df_info[attr_setname]]
+    df_info = get_info_file(args)
 
     columns = df_info["Variable_name"].to_numpy()
     name_cat = df_info["Variable_name"][(df_info["Type"].isin(["binary","boolean","category"]))].to_list()
@@ -276,12 +282,12 @@ def full_evaluation(args, term_evaluation=""):
     dataset_test_WDCR = list_df[1]  
     
     
-    df_sample = load_data(f'{basename}.csv', df_info)
+    df_sample = load_data(filename, df_info)
 
     dict_unique_values = {}
     for col in columns:
-        folder_unique_file = f"results/Proportion_save/Unique_Values_Census_2021/{filename_training.split(".csv")[0]}"
-        unique_file = f"{folder_unique_file}/unique_values_{col}.npy"
+        folder_unique_file = f"results\\Proportion_save\\Unique_Values_Census_2021\\{filename_training.split(".csv")[0]}"
+        unique_file = f"{folder_unique_file}\\unique_values_{col}.npy"
         if (not os.path.isfile(unique_file)):
             if (not os.path.isdir(folder_unique_file)):
                 os.makedirs(folder_unique_file)
@@ -293,28 +299,31 @@ def full_evaluation(args, term_evaluation=""):
 
     if (args.dataset_evaluation!=args.dataname): 
         # For future functionalities
-        folder_test_file = f"results/Proportion_save/{attr_setname}/{args.dataset_evaluation}/{args.dataname}"
+        folder_test_file = f"results\\Proportion_save\\{attr_setname}\\{args.dataset_evaluation}\\{args.dataname}"
         name_test_file = f"Proportion_test_data_distribution_{args.dataset_evaluation}_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        WDCR_reference_file = f"WDCR_{args.dataset_evaluation}_{args.dataname}"
     else:
-        folder_test_file = f"results/Proportion_save/{attr_setname}/{args.dataname}/{args.dataname}"
+        folder_test_file = f"results\\Proportion_save\\{attr_setname}\\{args.dataname}\\{args.dataname}"
         name_test_file = f"Proportion_reference_data_distribution_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+        WDCR_reference_file = f"WDCR_{args.dataname}_{args.dataname}"
 
-    proportion_test_file = f"{folder_test_file}/Proportion_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
+    proportion_test_file = f"{folder_test_file}\\Proportion_reference_data_{args.dataname}_{(filename_training).split(".")[0]}_{attr_setname}_{args.filename_test.split(".csv")[0]+args.special_model}"
 
     for i in range(1,4):    
         if (not os.path.isfile(f"{proportion_test_file}_{i}.npy")):
-            if(not os.path.isdir(os.path.dirname(f"{folder_test_file}/{name_test_file}"))):
-                os.makedirs(os.path.dirname(f"{folder_test_file}/{name_test_file}"))
+            if(not os.path.isdir(os.path.dirname(f"{folder_test_file}\\{name_test_file}"))):
+                os.makedirs(os.path.dirname(f"{folder_test_file}\\{name_test_file}"))
             print("\nGenerate Proportion file for test data")
             
             compute_proportion_file_from_unique_array_and_df(dict_unique_values, dataset_test.astype(str), columns, proportion_test_file, i, ".", True)
         else:
             print(f"Shape ({i}):", np.load(f"{proportion_test_file}_{i}.npy").shape)
-    
-    ser_scores_generated = output_serie_eval(dict_unique_values, basename_save, proportion_test_file, df_sample, dataset_test, dataset_test_WDCR, dataset_train, df_info, dir_path_evaluation_generated_data, True)
-    
-    
-    
-    res_pandas = pd.DataFrame([ser_scores_generated], index=[f"{args.attributes_setname}_{args.folder_save_end}{term_evaluation}"])    
-    res_pandas.transpose().to_csv(f"{dir_path_evaluation_generated_data}/overview_score.csv", sep=";", index_label="Metric")
 
+    if (not os.path.isfile(f"{folder_test_file}\\{WDCR_reference_file}.csv")):
+        df_DCR_training_data = Distance_to_Closest_Records(dataset_train, dataset_train, dataset_test_WDCR, df_info.reset_index(),proportion_test_file)
+        df_DCR_training_data.to_csv(f"{folder_test_file}\\{WDCR_reference_file}.csv", sep=";", index=False)
+    
+    ser_scores_generated = output_serie_eval(dict_unique_values, f"{folder_proportion_file_generated_data}\\{basename}", f"{folder_test_file}\\{WDCR_reference_file}.csv", proportion_test_file, df_sample, dataset_test, dataset_test_WDCR, dataset_train, df_info, dir_path_evaluation_generated_data, True)
+    
+    res_pandas = pd.DataFrame([ser_scores_generated], index=[f"{args.attributes_setname}_{args.size_data_str}{term_evaluation}"])    
+    res_pandas.transpose().to_csv(f"{dir_path_evaluation_generated_data}\\overview_score.csv", sep=";", index_label="Metric")

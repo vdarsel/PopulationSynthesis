@@ -5,6 +5,35 @@ from itertools import combinations
 from tqdm import tqdm
 from math import comb
 
+def adapt_numerical_values(dataframe: pd.DataFrame, 
+                           dict_unique_values: dict[np.ndarray],
+                           df_info: pd.DataFrame):
+    dataframe = dataframe.copy()
+    
+    columns_float = df_info["Variable_name"][df_info["Type"]=="float"].to_list()
+    columns_int = df_info["Variable_name"][df_info["Type"]=="int"].to_list()
+    
+    def map_to_nearest_lower(unique_val: np.ndarray, input_val: np.ndarray):
+        
+        sorted_unique_val = np.sort(unique_val)
+        
+        indices = np.searchsorted(sorted_unique_val, input_val, side='right') - 1
+        
+        indices = np.clip(indices, 0, len(unique_val) - 1)
+        
+        data_col = sorted_unique_val[indices]
+                
+        return data_col
+    
+    
+    for col in columns_int:
+        dataframe[col] = map_to_nearest_lower(dict_unique_values[col].astype(int), dataframe[col].to_numpy())
+        
+    for col in columns_float:
+        dataframe[col] = map_to_nearest_lower(dict_unique_values[col].astype(float), dataframe[col].to_numpy())
+     
+    return dataframe
+
 def compute_proportion_file_from_unique_array_and_df(
     dict_unique_values,
     preprocessed_data_df,
@@ -49,11 +78,11 @@ def compute_proportion_file_from_unique_array_and_df(
 
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path)
-    np.save(f"{dir_path}/{name}_{n_attributes}.npy",freq_list)
+    np.save(f"{dir_path}\\{name}_{n_attributes}.npy",freq_list)
 
     if save_combi:
-        np.save(f"{dir_path}/{name}_{n_attributes}_comb.npy",np.concatenate(combis_list))
-        np.save(f"{dir_path}/{name}_{n_attributes}_values.npy",np.concatenate(values), allow_pickle=True)
+        np.save(f"{dir_path}\\{name}_{n_attributes}_comb.npy",np.concatenate(combis_list))
+        np.save(f"{dir_path}\\{name}_{n_attributes}_values.npy",np.concatenate(values), allow_pickle=True)
         
         
     print("Generation of the proportions done")
