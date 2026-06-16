@@ -70,9 +70,9 @@ if __name__ == '__main__':
     for key,val in config_2._get_kwargs():
         setattr(config, key, val)
         
-    setattr(config,"sample_folder",f"{config.sample_folder_variable}\\{config.sample_folder_size}")
     setattr(config,"variable",args.variable)
     setattr(config,"str_float", str_float)
+    setattr(config,"size_data_str", str_float+"%")
 
     # check cuda
     if config.gpu != -1 and torch.cuda.is_available():

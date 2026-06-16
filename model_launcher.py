@@ -34,8 +34,11 @@ from models.Monte_Carlo_Markov_Chain.Bayesian.MCMC_Bayesian import MCMC_Bayesian
 
 from models.Direct_Inflating.Direct_Inflating import train_sample_Direct_Inflating
 
+from utils.utils_dir import get_ckpt_dir, get_model_torch_path
+
 def learn_transformer_vae_if_needed(config):
-    if (config.force_training_embedding) or (not os.path.isfile(f"ckpt/{config.folder_save}/train_z.npy")):
+    ckpt_dir = get_ckpt_dir(config)
+    if (config.force_training_embedding) or (not os.path.isfile(f"{ckpt_dir}\\train_z.npy")):
         learn_encoding_Transformer_VAE(config)
 
 
@@ -65,13 +68,15 @@ class Diffusion_model(Model_for_Population_Synthesis):
     def train_if_needed(self, config):
         learn_transformer_vae_if_needed(config)
         
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
-            train_Diffusion_from_embedded_data(config, self.dim)
+        model_path = get_model_torch_path(config, "model", self.termination_saving())
+        
+        if (config.force_training) or (not os.path.isfile(model_path)):
+            train_Diffusion_from_embedded_data(config, self.termination_saving(),self.dim)
     
     def sample(self, config):
-        sample_Diffusion_from_embedded_data(config, self.dim)
+        sample_Diffusion_from_embedded_data(config, self.termination_saving(), self.dim)
         
-        decode_Transformer_VAE(config,self.termination_saving())
+        decode_Transformer_VAE(config, self.termination_saving())
 
     def termination_saving(self):    
         return f"_diffusion_{self.dim}"
@@ -88,13 +93,15 @@ class beta_VAE_embedding(Model_for_Population_Synthesis):
         self.dim = dim
 
     def train_if_needed(self, config):
-        learn_transformer_vae_if_needed(config) 
+        learn_transformer_vae_if_needed(config)
+         
+        model_path = get_model_torch_path(config, "model", self.termination_saving())
     
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
+        if (config.force_training) or (not os.path.isfile(model_path)):
             train_beta_VAE_from_embedded_data(config, self.beta, self.termination_saving(), self.dim)
         
     def sample(self, config):
-        sample_beta_VAE_from_embedded_data(config, self.beta, self.termination(), self.dim)
+        sample_beta_VAE_from_embedded_data(config, self.beta, self.termination_saving(), self.dim)
         
         decode_Transformer_VAE(config,self.termination_saving())
 
@@ -108,14 +115,17 @@ class beta_VAE(Model_for_Population_Synthesis):
         self.dim = dim
     
     def train_if_needed(self, config):
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/model{self.termination_saving()}.pt")):
+         
+        model_path = get_model_torch_path(config, "model", self.termination_saving())
+    
+        if (config.force_training) or (not os.path.isfile(model_path)):
             train_beta_VAE_alone(config, self.beta, self.termination_saving(),  self.dim)
         
     def sample(self, config):
         sample_beta_VAE_alone(config, self.beta, self.termination_saving(), self.dim)
         
     def termination_saving(self):
-        return f"_beta_VAE_beta_{f"{self.beta}".replace(".","_")}_{self.dim}"
+        return f"_beta_VAE_beta_{f"{self.beta}".replace(".","_")}_dim_{self.dim}"
 
 class TVAE(Model_for_Population_Synthesis):
     def __init__(self, beta, dim):
@@ -123,8 +133,11 @@ class TVAE(Model_for_Population_Synthesis):
         self.dim = dim
 
     def train_if_needed(self, config):
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/encoder_TVAE_dim_{self.dim}_beta_{f"{self.beta}".replace(".","_")}.pt")):
-            train_TVAE(config, self.beta, self.dim)
+         
+        model_path = get_model_torch_path(config, "decoder", self.termination_saving())
+    
+        if (config.force_training) or (not os.path.isfile(model_path)):
+            train_TVAE(config, self.beta, self.termination_saving(), self.dim)
     
     def sample(self, config):
         sample_TVAE(config, self.beta, self.termination_saving(), self.dim)
@@ -142,7 +155,10 @@ class WGAN_embedding(Model_for_Population_Synthesis):
     
     def train_if_needed(self, config):
         learn_transformer_vae_if_needed(config)
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/discriminator{self.termination_saving()}.pt")):
+         
+        model_path = get_model_torch_path(config, "generator", self.termination_saving())
+    
+        if (config.force_training) or (not os.path.isfile(model_path)):
             train_WGAN_embedding_data(config, self.termination_saving(), self.dim)
             
     def sample(self, config):
@@ -157,7 +173,10 @@ class WGAN(Model_for_Population_Synthesis):
         self.dim = dim
         
     def train_if_needed(self, config):
-        if (config.force_training) or (not os.path.isfile(f"ckpt/{config.folder_save}/discriminator{self.termination_saving()}.pt")):
+         
+        model_path = get_model_torch_path(config, "generator", self.termination_saving())
+    
+        if (config.force_training) or (not os.path.isfile(model_path)):
             train_WGAN_alone(config, self.termination_saving(), self.dim)
     
     def sample(self, config):
