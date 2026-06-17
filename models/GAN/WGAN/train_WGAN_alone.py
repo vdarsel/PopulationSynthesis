@@ -1,6 +1,6 @@
 from models.GAN.WGAN.model_WGAN_alone import Generator_Tabular, Discriminator_Tabular, calc_gradient_penalty
 import os
-from utils.utils_train import set_requires_grad, transform_to_numeric_values
+from utils.utils_train import set_requires_grad, transform_to_numeric_values, preprocess
 from utils.utils_sample import preprocessing_cat_data_dataframe_sampling, process_nans
 import torch
 from torch.utils.data import DataLoader
@@ -52,21 +52,16 @@ def train_WGAN_alone(args, term, k=256):
     info = get_info_file(args)[["Type", "Variable_name"]]
 
     name_cat = info["Variable_name"][info["Type"].isin(["binary","category", "bool"])].to_list()
+    name_num= info["Variable_name"][info["Type"].isin(["int","float"])].to_list()
     
-    idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category", "bool"])]
     idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
     
-    training_file = f"{data_dir}/{filename_training}"
+        
+    X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename_training, name_cat, name_num, T_dict, ) 
+    # If num_normalization= "quantile", the output distribution is a normal distribution based on the quantile distribution 
     
-    training_data = import_data(training_file, info["Variable_name"], name_cat)
-    
-    training_data,_ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
-
-    training_data = process_nans(training_data.to_numpy(), idx_num, idx_cat, T_dict['num_nan_policy'], T_dict['cat_nan_policy'])
-    X_num, X_cat, categories = transform_to_numeric_values(training_data, idx_num, idx_cat)
-    
-    X_train_num = torch.Tensor(X_num)
-    X_train_cat = torch.LongTensor(X_cat)
+    X_train_num = torch.Tensor(np.concat(X_num,0))
+    X_train_cat = torch.LongTensor(np.concat(X_cat,0))
     
     d_numerical = len(idx_num)
     
