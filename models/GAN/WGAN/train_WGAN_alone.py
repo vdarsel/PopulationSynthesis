@@ -180,7 +180,11 @@ def train_WGAN_alone(args, term, k=256):
         loss_G_epoch.append(np.mean(loss_G_train))
         loss_D_real_epoch.append(np.mean(loss_D_real_train))
         loss_D_fake_epoch.append(np.mean(loss_D_fake_train))
-    
+        
+        # Save checkpoint every 100 epochs
+        if epoch % 100 == 0:
+            torch.save(generator_net.state_dict(), path_generator_save)
+
     ##################
     ### Save Model ###
     ##################

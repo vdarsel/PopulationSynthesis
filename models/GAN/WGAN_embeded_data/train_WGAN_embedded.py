@@ -144,7 +144,11 @@ def train_WGAN_embedding_data(args, term, k=256):
         loss_D_real_epoch.append(np.mean(loss_D_real_train))
         loss_D_fake_epoch.append(np.mean(loss_D_fake_train))
 
-    
+            
+        # Save checkpoint every 100 epochs
+        if epoch % 100 == 0:
+            torch.save(generator_net.state_dict(), generator_path_save)
+
     ##################
     ### Save Model ###
     ##################
