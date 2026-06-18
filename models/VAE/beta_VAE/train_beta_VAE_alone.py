@@ -25,6 +25,7 @@ warnings.filterwarnings('ignore')
 
 def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
     ce_loss_fn = nn.CrossEntropyLoss()
+    
     mse_loss = (X_num - Recon_X_num).pow(2).mean()
     ce_loss = 0
     acc = 0
@@ -44,6 +45,39 @@ def compute_loss(X_num, X_cat, Recon_X_num, Recon_X_cat, mu_z, logvar_z):
 
     loss_kld = -0.5 * torch.mean(temp.mean(-1).mean())
     return mse_loss, ce_loss, loss_kld, acc
+
+def train_one_epoch(model, dataloader, optimizer, device, n_cat):
+    model.train() # 1. Guarantee train mode at the start of the function
+    batch_loss = 0.0
+    len_input = 0
+    
+    for batch_num, batch_cat in dataloader:
+        inputs = torch.concat([batch_num, batch_cat], 1).float().to(device)
+        x_num_batch = batch_num.float().to(device) 
+        x_cat_batch = batch_cat.float().to(device)
+        
+        recon_x_cat, recon_x_cont, mu, logvar = model(inputs)
+        loss = model.loss(recon_x_cat, recon_x_cont, x_cat_batch, x_num_batch, n_cat, mu, logvar)
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        batch_loss += loss.item() * len(inputs)
+        len_input += len(inputs)
+        
+    return batch_loss / len_input
+
+def evaluate(model, validation_data, device, n_cat):
+    model.eval() # 2. Guarantee eval mode at the start of the function
+    X_val_num, X_val_cat = validation_data
+    inputs = torch.concat([X_val_num, X_val_cat], 1).float().to(device)
+    
+    with torch.no_grad():
+        recon_cat, recon_num, mu, logvar = model(inputs)
+        val_loss = model.loss(recon_cat, recon_num, X_val_cat, X_val_num, n_cat, mu, logvar)
+        
+    return val_loss.item()
 
 
 def train_beta_VAE_alone(args, beta, term, k=0):
@@ -85,13 +119,17 @@ def train_beta_VAE_alone(args, beta, term, k=0):
     name_cat = info["Variable_name"][info["Type"].isin(["binary","category", "bool"])].to_list()
 
     X_num, X_cat, categories, d_numerical = preprocess(data_dir, filename_training, name_cat, name_num, T_dict, )
+    # If num_normalization= "quantile", the output distribution is a normal distribution based on the quantile distribution 
+    
     n_cat = len(categories)    
     
     X_train_num, X_validation_num = X_num
     X_train_cat, X_validation_cat = X_cat
     
-    X_train_num, X_validation_num = (torch.tensor(X_train_num).float()-0.5)*2, (torch.tensor(X_validation_num).float()-0.5)*2
-    X_train_cat, X_validation_cat =  torch.tensor(X_train_cat), torch.tensor(X_validation_cat)
+    X_train_num, X_validation_num = torch.tensor(X_train_num).float(), torch.tensor(X_validation_num).float()
+    X_train_cat, X_validation_cat = torch.tensor(X_train_cat), torch.tensor(X_validation_cat)
+    
+    
 
     X_train_cat_tab, X_validation_cat_tab = [],[]
     for i,cat in enumerate(categories):
@@ -133,51 +171,31 @@ def train_beta_VAE_alone(args, beta, term, k=0):
     ### Train Model ###
     ###################
     
-    model.train()
 
     best_loss = float('inf')
     current_lr = optimizer.param_groups[0]['lr']
     patience = 0
     start_time = time.time()
-    for epoch in range(num_epochs):
-        pbar = tqdm(train_loader, total=len(train_loader))
-        pbar.set_description(f"Epoch {epoch+1}/{num_epochs}")
-
-        batch_loss = 0.0
-        len_input = 0
-        for batch_num, batch_cat_one_hot in pbar:
-            inputs = torch.concat([batch_num,batch_cat_one_hot],1).float().to(device)
-            recon_x_cat, recon_x_cont, mu, logvar = model(inputs)
-            x_num_batch = batch_num.float().to(device) 
-            x_cat_batch = batch_cat_one_hot.float().to(device)
-            loss = model.loss(recon_x_cat, recon_x_cont, x_cat_batch, x_num_batch, n_cat, mu, logvar)
-            batch_loss += loss.item() * len(inputs)
-            len_input += len(inputs)
-
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-
     
-        ######################
-        ### Evaluate Model ###
-        ######################
-
-        model.eval()
-        with torch.no_grad():
-            X_recon_val_cat, x_recon_val_num, mu_val, logvar_val = model(X_validation)
-            val_loss = model.loss(X_recon_val_cat, x_recon_val_num, X_validation_cat_one_hot.float(), X_validation_num, n_cat, mu_val, logvar_val)
+    for epoch in range(num_epochs):
+            train_loss = train_one_epoch(model, train_loader, optimizer, device, n_cat)
+            val_loss = evaluate(model, (X_validation_num, X_validation_cat_one_hot), device, n_cat)
+            print(f'Epoch: {epoch}, Train Loss: {train_loss:.6f}, Val Loss: {val_loss:.6f}')
+            
+            # Step the scheduler EXACTLY ONCE per epoch
             scheduler.step(val_loss)
+            
+            # Check if learning rate updated
             new_lr = optimizer.param_groups[0]['lr']
             if new_lr != current_lr:
                 current_lr = new_lr
                 print(f"Learning rate updated: {current_lr}")
 
+            # Track early stopping and save best model
             curr_loss = val_loss
-            scheduler.step(curr_loss)
 
             if curr_loss < best_loss:
-                best_loss = curr_loss.item()
+                best_loss = curr_loss  # Removed .item() since curr_loss is already a float
                 patience = 0
                 torch.save(model.state_dict(), path_model_save)
             else:
@@ -185,12 +203,11 @@ def train_beta_VAE_alone(args, beta, term, k=0):
                 if patience == args.beta_VAE.patience_max:
                     print('Early stopping')
                     break 
-        print('epoch: {}, Train Loss:{:.6f}, Val Loss:{:.6f}'.format(epoch, batch_loss/len_input, val_loss.item()))
 
-        if epoch % 100 == 0:
-            path_model_save_epoch = get_model_torch_path(args, "model", f'{term}_{epoch}')
-            torch.save(model.state_dict(), path_model_save_epoch)
-
+            # Save checkpoint every 100 epochs
+            if epoch % 100 == 0:
+                path_model_save_epoch = get_model_torch_path(args, "model", f'{term}_{epoch}')
+                torch.save(model.state_dict(), path_model_save_epoch)
     
     ##################
     ### Save Model ###

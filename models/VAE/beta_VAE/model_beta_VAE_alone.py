@@ -2,14 +2,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.nn.init as init
-from torch.autograd import Variable
 import numpy as np
 
 def reparametrize(mu, logvar):
-    std = logvar.div(2).exp()
-    eps = Variable(std.data.new(std.size()).normal_())
-    return mu + std*eps
-
+    std = torch.exp(0.5 * logvar)
+    eps = torch.randn_like(std) # Automatically matches shape and device
+    return mu + std * eps
 
 
 class Beta_VAE(nn.Module):
@@ -31,21 +29,27 @@ class Beta_VAE(nn.Module):
         self.beta = beta
         self.encoder = nn.Sequential(
             nn.Linear(self.dim_in,self.dims[0]),
+            nn.LayerNorm(self.dims[0]),
             nn.ReLU(True),
             nn.Linear(self.dims[0], self.dims[1]),
+            nn.LayerNorm(self.dims[1]),
             nn.ReLU(True),
             nn.Linear(self.dims[1], self.dims[2]),
+            nn.LayerNorm(self.dims[2]),
             nn.ReLU(True),
             nn.Linear(self.dims[2], self.dims[3]*2),
         )
         self.decoder = nn.Sequential(
             nn.Linear(self.dims[3], self.dims[2]),
+            nn.LayerNorm(self.dims[2]),
             nn.ReLU(True),
             nn.Linear(self.dims[2], self.dims[1]),              
+            nn.LayerNorm(self.dims[1]),
             nn.ReLU(True),
             nn.Linear(self.dims[1],self.dims[0] ),
+            nn.LayerNorm(self.dims[0]),
             nn.ReLU(True),
-            nn.Linear(self.dims[0], self.dim_in),  
+            nn.Linear(self.dims[0], self.dim_in), 
         )
 
         self.weight_init()
@@ -70,8 +74,8 @@ class Beta_VAE(nn.Module):
            x_recon_cat_tab.append(torch.softmax(x_recon[:,j:j+dim_cat],1))
            j += dim_cat
         x_recon_cat = torch.concat(x_recon_cat_tab,1)
-        x_recon_cont = x_recon[:,self.dim_in_cat_sum:]
-
+        x_recon_cont = x_recon[:, self.dim_in_cat_sum:]
+        
         return x_recon_cat, x_recon_cont, mu, logvar
 
     def loss(self, recon_x_cat, recon_x_cont, x_cat, x_cont, n_cat, mu, logvar):
