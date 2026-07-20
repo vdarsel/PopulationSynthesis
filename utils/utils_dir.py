@@ -26,7 +26,7 @@ def get_ckpt_dir(config):
     return os.path.join("ckpt",config.folder_save,config.size_data_str)
 
 def get_folder_sampling(config, term):
-    res = os.path.join(config.sample_folder_variable, config.variable,config.size_data_str,config.folder_save+term)
+    res = os.path.join("results", config.sample_folder, config.variable,config.size_data_str,config.folder_save+term)
     if not (os.path.isdir(res)):
         os.makedirs(res)
     return res
