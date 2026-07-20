@@ -25,7 +25,7 @@ def sample_TVAE(args, beta, term, k=256):
 
     filename_training = args.filename_training
 
-    train_train_data_save_path = os.path.join(ckpt_dir, "TVAE_" + filename_training + "_train_train_dim_" + k + "_beta_" + beta + ".csv")
+    train_train_data_save_path = os.path.join(ckpt_dir, f"TVAE_{filename_training}_train_train_dim_{k}_beta_{beta}.csv")
 
     data_dir = get_data_dir(args)
 

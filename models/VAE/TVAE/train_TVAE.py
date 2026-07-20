@@ -52,7 +52,7 @@ def train_TVAE(args, beta, term, dim=256):
         
     encoder_save_path = get_model_torch_path(args, "encoder", term)
     decoder_save_path = get_model_torch_path(args, "decoder", term)
-    training_data_save_path = os.path.join(ckpt_dir, "TVAE_" + filename_training + "_train_train_dim_" + dim + "_beta_" + beta_str + ".csv")
+    training_data_save_path = os.path.join(ckpt_dir, f"TVAE_{filename_training}_train_train_dim_{dim}_beta_{beta_str}.csv")
 
     path_time = os.path.join(ckpt_dir, "training_time_TVAE.txt")
 

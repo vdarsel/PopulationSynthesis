@@ -37,7 +37,7 @@ def generate_histogram(df, path, i):
         plt.figure(figsize=[7,7])
         plt.hist(df[metric])
         plt.title(f'{metric} {i}')
-        plt.savefig(os.path.join(path, "hist_" + metric + "_" + i + ".png"))
+        plt.savefig(os.path.join(path, f"hist_{metric}_{i}.png"))
         plt.close()
     
 def generate_plot(proportion_sample, proportion_ref, path, i):
@@ -53,7 +53,7 @@ def generate_plot(proportion_sample, proportion_ref, path, i):
     plt.xlabel("Original data proportion")
     plt.ylabel("Sampled data proportion")
     plt.title(dict_title[i])
-    plt.savefig(os.path.join(path,"comparison_"+i+".png"))
+    plt.savefig(os.path.join(path, f"comparison_{i}.png"))
     plt.close()
     generate_color_map_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_{i}",200)
     generate_color_map_filter_save(proportion_ref_concat,proportion_sample_concat,path,f"Full_Heatmap_filter_{i}",2000, min_freq=1)
@@ -79,7 +79,7 @@ def generate_plot_plotly(proportion_sample, proportion_ref, combi_names, values,
                                 "Col1: %{customdata[0]}",
                                 "Col2: %{customdata[1]}",
                             ])))
-    fig.write_html(os.path.join(path, "comparison_"+i+".html"))
+    fig.write_html(os.path.join(path, f"comparison_{i}.html"))
     generate_color_map_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_{i}",2000)
     generate_color_map_filter_save(proportion_ref,proportion_sample,path,f"Full_Heatmap_filter_{i}",2000, min_freq=10)
 
@@ -140,7 +140,7 @@ def output_serie_eval(dict_unique_values, basename_file_save, reference_DCR_file
         df_scores_by_cat = get_df_scores_by_cat(proportion, proportion_test, combi_list, combi_names, i)
         
         if save:
-            df_scores_by_cat.to_csv(os.path.join(dir_path_save_results,"scores_by_cat_"+ i +".csv"), sep=";")
+            df_scores_by_cat.to_csv(os.path.join(dir_path_save_results, f"scores_by_cat_{i}.csv"), sep=";")
             generate_histogram(df_scores_by_cat, dir_path_save_results, i)
             generate_plot(proportion, proportion_test, dir_path_save_results, i)
             generate_plot_plotly(proportion_concat, proportion_test_concat, combi_names_concat, values_test_concat, dir_path_save_results, i)
@@ -286,7 +286,7 @@ def full_evaluation(args, term_evaluation=""):
     dict_unique_values = {}
     for col in columns:
         folder_unique_file =  os.path.join("results","Proportion_save","Unique_Values_Census_2021",filename_training.split(".csv")[0])
-        unique_file =  os.path.join(folder_unique_file,"unique_values_{col}.npy")
+        unique_file =  os.path.join(folder_unique_file,f"unique_values_{col}.npy")
         if (not os.path.isfile(unique_file)):
             if (not os.path.isdir(folder_unique_file)):
                 os.makedirs(folder_unique_file)
@@ -317,12 +317,12 @@ def full_evaluation(args, term_evaluation=""):
             compute_proportion_file_from_unique_array_and_df(dict_unique_values, dataset_test.astype(str), columns, proportion_test_file, i, ".", True)
         else:
             print(f"Shape ({i}):", np.load(f"{proportion_test_file}_{i}.npy").shape)
-
-    if (not os.path.isfile(os.path.join(folder_test_file,WDCR_reference_file,".csv"))):
+    
+    if (not os.path.isfile(os.path.join(folder_test_file,WDCR_reference_file + ".csv"))):
         df_DCR_training_data = Distance_to_Closest_Records(dataset_train, dataset_train, dataset_test_WDCR, df_info.reset_index(),proportion_test_file)
-        df_DCR_training_data.to_csv(os.path.join(folder_test_file, WDCR_reference_file, ".csv"), sep=";", index=False)
+        df_DCR_training_data.to_csv(os.path.join(folder_test_file, WDCR_reference_file + ".csv"), sep=";", index=False)
 
-    ser_scores_generated = output_serie_eval(dict_unique_values,  os.path.join(folder_proportion_file_generated_data, basename),  os.path.join(folder_test_file, WDCR_reference_file,".csv"), proportion_test_file, df_sample, dataset_test, dataset_test_WDCR, dataset_train, df_info, dir_path_evaluation_generated_data, True)
+    ser_scores_generated = output_serie_eval(dict_unique_values,  os.path.join(folder_proportion_file_generated_data, basename),  os.path.join(folder_test_file, WDCR_reference_file + ".csv"), proportion_test_file, df_sample, dataset_test, dataset_test_WDCR, dataset_train, df_info, dir_path_evaluation_generated_data, True)
     
     res_pandas = pd.DataFrame([ser_scores_generated], index=[f"{args.attributes_setname}_{args.size_data_str}{term_evaluation}"])    
     res_pandas.transpose().to_csv(os.path.join(dir_path_evaluation_generated_data,"overview_score.csv"), sep=";", index_label="Metric")
