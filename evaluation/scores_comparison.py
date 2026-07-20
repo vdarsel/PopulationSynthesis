@@ -1,6 +1,6 @@
 import pandas as pd
 from model_launcher import Model_for_Population_Synthesis
-
+import os
 from utils.utils_dir import get_folder_evaluation
 
 def scores_comparison(config, models:list[Model_for_Population_Synthesis]):
