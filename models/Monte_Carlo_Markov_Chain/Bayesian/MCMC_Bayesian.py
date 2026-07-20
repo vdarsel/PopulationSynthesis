@@ -89,7 +89,7 @@ def MCMC_Bayesian_learn_sample(args, alpha, term):
     name_num = info[info["Type"].isin(["int","float"])].reset_index()["Variable_name"]
     columns = info["Variable_name"]
     
-    df_data = import_data(f"{data_dir}\\{filename_training}", columns, columns) # All variables are treated as categorical
+    df_data = import_data(os.path.join(data_dir, filename_training), columns, columns) # All variables are treated as categorical
     
     df_data, _ = preprocessing_cat_data_dataframe_sampling(df_data, args.transform.cat_min_count, name_cat)
     

@@ -37,7 +37,7 @@ def sample_WGAN_alone(args, term, k = 256):
     T_dict['cat_min_count'] = args.transform.cat_min_count
     T_dict['cat_encoding'] = args.transform.cat_encoding
         
-    training_file = f'{data_dir}\\{filename_training}'
+    training_file = os.path.join(data_dir, filename_training)
 
     n_batch = args.batch_size_generation
     n = int(np.ceil(n_sample/n_batch))
@@ -126,5 +126,5 @@ def sample_WGAN_alone(args, term, k = 256):
     #################
 
     (pd.DataFrame(final_data, columns=info["Variable_name"]).to_csv(sampling_file,sep=";", index=False))
-    shutil.copyfile(f"conf\\conf_variable\\{args.variable}.yml", f"{folder_sampling}\\{args.variable}.yml")
-    shutil.copyfile(f"conf\\conf_size\\{args.str_float}%.yml", f"{folder_sampling}\\{args.str_float}%.yml")
+    shutil.copyfile(os.path.join("conf","conf_variable",args.variable+".yml"), os.path.join(folder_sampling, args.variable + ".yml"))
+    shutil.copyfile(os.path.join("conf","conf_size", args.str_float + "%.yml"), os.path.join(folder_sampling, args.str_float + "%.yml"))

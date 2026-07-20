@@ -202,8 +202,8 @@ def get_input_embedded_training_data(args):
 
     ckpt_dir = get_ckpt_dir(args)
     
-    embedding_save_path = f'{ckpt_dir}\\train_z.npy' 
-    embedding_validation_save_path = f'{ckpt_dir}\\validation_z.npy' 
+    embedding_save_path = os.path.join(ckpt_dir, "train_z.npy")
+    embedding_validation_save_path = os.path.join(ckpt_dir, "validation_z.npy")
     
     train_z = torch.tensor(np.load(embedding_save_path)).float()
     validation_z = torch.tensor(np.load(embedding_validation_save_path)).float()

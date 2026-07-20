@@ -65,6 +65,11 @@ def compute_proportion_file_from_unique_array_and_df(
             [dict_unique_values[col] for col in cols]
         ))
         freq_temp = preprocessed_data_df[cols].value_counts(normalize=True)
+        # print(freq_temp.index)
+        # print("-----")
+        # print(freq_temp)
+        # print("-----")
+        # print(freq_serie.loc)
         freq_serie.loc[freq_temp.index] = freq_temp
         freq_values = freq_serie.to_numpy()
         
@@ -78,12 +83,12 @@ def compute_proportion_file_from_unique_array_and_df(
 
     if not os.path.isdir(dir_path):
         os.makedirs(dir_path)
-    np.save(f"{dir_path}\\{name}_{n_attributes}.npy",freq_list)
+    np.save(os.path.join(dir_path, name + "_" + n_attributes + ".npy"), freq_list)
 
     if save_combi:
-        np.save(f"{dir_path}\\{name}_{n_attributes}_comb.npy",np.concatenate(combis_list))
-        np.save(f"{dir_path}\\{name}_{n_attributes}_values.npy",np.concatenate(values), allow_pickle=True)
-        
+        np.save(os.path.join(dir_path,name + "_" + n_attributes + "_comb.npy"),np.concatenate(combis_list))
+        np.save(os.path.join(dir_path, name + "_" + n_attributes + "_values.npy"),np.concatenate(values), allow_pickle=True)
+
         
     print("Generation of the proportions done")
 

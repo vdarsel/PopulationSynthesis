@@ -38,7 +38,7 @@ from utils.utils_dir import get_ckpt_dir, get_model_torch_path
 
 def learn_transformer_vae_if_needed(config):
     ckpt_dir = get_ckpt_dir(config)
-    if (config.force_training_embedding) or (not os.path.isfile(f"{ckpt_dir}\\train_z.npy")):
+    if (config.force_training_embedding) or (not os.path.isfile(os.path.join(ckpt_dir,"train_z.npy"))):
         learn_encoding_Transformer_VAE(config)
 
 

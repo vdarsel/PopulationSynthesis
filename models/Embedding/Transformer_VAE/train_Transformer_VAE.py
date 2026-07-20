@@ -257,7 +257,7 @@ def learn_encoding_Transformer_VAE(args):
         X_validation_cat = X_validation_cat.to(device)
         validation_z = pre_encoder(X_validation_num, X_validation_cat).detach().cpu().numpy()
 
-        np.save(f'{ckpt_dir}\\train_z.npy', train_z)
-        np.save(f'{ckpt_dir}\\validation_z.npy', validation_z)
+        np.save(os.path.join(ckpt_dir,"train_z.npy"), train_z)
+        np.save(os.path.join(ckpt_dir, "validation_z.npy"), validation_z)
 
         print('Successfully save pretrained embeddings in disk!')
