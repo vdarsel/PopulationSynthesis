@@ -73,7 +73,6 @@ class Dataset:
                 x: pd.read_csv(os.path.join(dir_,f'_{x}.'.join(filename.split('.')).exists(), sep = ';'))
                 for x in splits
             }
-
         info = pd.read_csv(dir_ / 'info.csv', sep=";")
         idx_cat = info["Variable_name"][info["Type"].isin(["binary","category","bool"])]
         idx_num = info["Variable_name"][info["Type"].isin(["int","float"])]

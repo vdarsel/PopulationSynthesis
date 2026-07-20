@@ -52,15 +52,15 @@ def train_TVAE(args, beta, term, dim=256):
         
     encoder_save_path = get_model_torch_path(args, "encoder", term)
     decoder_save_path = get_model_torch_path(args, "decoder", term)
-    training_data_save_path = f'{ckpt_dir}\\TVAE_{filename_training}_train_train_dim_{dim}_beta_{beta_str}.csv'
+    training_data_save_path = os.path.join(ckpt_dir, "TVAE_" + filename_training + "_train_train_dim_" + dim + "_beta_" + beta_str + ".csv")
 
-    path_time = f'{ckpt_dir}\\training_time_TVAE.txt'
+    path_time = os.path.join(ckpt_dir, "training_time_TVAE.txt")
 
     ###################
     ### Import Data ###
     ###################
 
-    dataset_train = import_data(f"{data_dir}\\{filename_training}", columns, name_cat)
+    dataset_train = import_data(os.path.join(data_dir, filename_training), columns, name_cat)
         
     idx_training, idx_validation = generate_train_validation_set(dataset_train[name_cat])
 

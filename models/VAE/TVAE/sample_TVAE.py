@@ -25,7 +25,7 @@ def sample_TVAE(args, beta, term, k=256):
 
     filename_training = args.filename_training
 
-    train_train_data_save_path = f'{ckpt_dir}\\TVAE_{filename_training}_train_train_dim_{k}_beta_{beta}.csv'
+    train_train_data_save_path = os.path.join(ckpt_dir, "TVAE_" + filename_training + "_train_train_dim_" + k + "_beta_" + beta + ".csv")
 
     data_dir = get_data_dir(args)
 
@@ -50,7 +50,7 @@ def sample_TVAE(args, beta, term, k=256):
     columns = info["Variable_name"]
     name_cat = info["Variable_name"][(info["Type"].isin(["binary","bool","category"]))].to_list()
 
-    dataset_train = import_data(f"{data_dir}\\{filename_training}", columns, name_cat)
+    dataset_train = import_data(os.path.join(data_dir, filename_training), columns, name_cat)
     dataset_train_train = import_data(train_train_data_save_path, columns, name_cat)
 
     min_size_category = args.transform.cat_min_count

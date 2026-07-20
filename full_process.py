@@ -51,7 +51,7 @@ if __name__ == '__main__':
 
     args = odict(vars(parser.parse_args()))
     
-    with open(f"conf\\conf_variable\\{args.variable}.yml", "r") as f:
+    with open(os.path.join("conf","conf_variable", args.variable + ".yml",), "r") as f:
         config_ = yaml.safe_load(f)
     config = dict2namespace(config_)
     
@@ -63,7 +63,7 @@ if __name__ == '__main__':
     else:
         str_float = "_".join(str(args.size_data).split("."))
     
-    with open(f"conf\\conf_size\\{str_float}%.yml", "r") as f:
+    with open(os.path.join("conf","conf_size",str_float +"%.yml"), "r") as f:
         config_ = yaml.safe_load(f)
     config_2 = dict2namespace(config_)
 

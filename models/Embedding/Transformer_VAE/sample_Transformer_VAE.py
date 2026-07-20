@@ -38,7 +38,7 @@ def decode_Transformer_VAE(args, term):
 
     T = src.Transformations(**T_dict)
     data_dir = get_data_dir(args)
-    training_file = f'{data_dir}\\{filename_training}'
+    training_file = os.path.join(data_dir, filename_training)
     folder_sampling = get_folder_sampling(args, term)
     
     encoded_filename = get_encoded_filename(args, term)
@@ -145,5 +145,5 @@ def decode_Transformer_VAE(args, term):
     #################
 
     (pd.DataFrame(final_data, columns=info["Variable_name"]).to_csv(sampling_file,sep=";", index=False))
-    shutil.copyfile(f"conf\\conf_variable\\{args.variable}.yml", f"{folder_sampling}\\{args.variable}.yml")
-    shutil.copyfile(f"conf\\conf_size\\{args.str_float}%.yml", f"{folder_sampling}\\{args.str_float}%.yml")
+    shutil.copyfile(os.path.join("conf","conf_variable",args.variable+".yml"), os.path.join(folder_sampling, args.variable + ".yml"))
+    shutil.copyfile(os.path.join("conf","conf_size",args.str_float + "%.yml"), os.path.join(folder_sampling, args.str_float + "%.yml"))

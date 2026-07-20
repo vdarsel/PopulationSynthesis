@@ -15,7 +15,7 @@ def get_info_file(config):
 
 
 def import_data(filename, columns, columns_cat):
-    
+
     data = pd.read_csv(filename, sep=";", low_memory=False, usecols=columns)
     
     for idx in columns_cat:

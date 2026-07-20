@@ -51,7 +51,7 @@ def train_sample_BN_tree(args):
 
     columns = info["Variable_name"]
     
-    df_data = import_data(f"{data_dir}\\{filename_training}", columns, columns) # All variables are treated as categorical
+    df_data = import_data(os.path.join(data_dir, filename_training), columns, columns) # All variables are treated as categorical
     
     df_data, _ = preprocessing_cat_data_dataframe_sampling(df_data, args.transform.cat_min_count, name_cat)
     
@@ -73,7 +73,7 @@ def train_sample_BN_tree(args):
     nx.draw_circular(
         best_model, with_labels=True, arrowsize=30, node_size=800, alpha=0.3, font_weight="bold"
     )
-    plt.savefig(f"{folder_sampling}\\best_graph.png")
+    plt.savefig(os.path.join(folder_sampling, "best_graph.png"))
     plt.close()
     
     ########################
