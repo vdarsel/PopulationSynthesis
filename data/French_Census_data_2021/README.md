@@ -61,7 +61,7 @@ Using the socio attribute set with 1% of the total population, the following res
 [Experiments conducted June 17th, 2026]
 
 | Model                   | Parameters  | $\overline{SRMSE}_3$           | $SSCIOD$ | Wasserstein-DCR |
-|-----------------------------|------------------------------|--------|-----------------|
+|-----------------------------|------------------------------|--------|-----------------|--------|
 | Diffusion                   | Dimension: 500               | 1.17   | 7.33%           | 8.51e-07 |
 | beta VAE                    | Dimension: 256 <br>Beta: 1   | 1.08   | 12.44%          | 2.67e-06 |
 | beta VAE (embedding)        | Dimension: 256 <br>Beta: 0.1 | 2.24   | 12.38%          | 8.51e-07 |
