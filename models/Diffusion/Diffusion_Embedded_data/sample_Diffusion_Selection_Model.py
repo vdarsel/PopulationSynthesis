@@ -36,7 +36,7 @@ def sample_Diffusion_from_Transformer_data(args, projection_dim = 1024):
 
     denoise_fn = MLPDiffusion(in_dim, projection_dim).to(device)
 
-    model = Model_Diffusion(denoise_fn = denoise_fn, hid_dim = train_z.shape[1]).to(device)
+    model = Model_Diffusion(denoise_fn = denoise_fn, hid_dim = projection_dim).to(device)
 
     model.load_state_dict(import_model)
 

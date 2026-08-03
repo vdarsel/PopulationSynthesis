@@ -58,7 +58,7 @@ def train_Diffusion_from_embedded_data(args, term, projection_dim = 1024):
     num_params = sum(p.numel() for p in denoise_fn.parameters())
     print("the number of parameters", num_params)
 
-    model = Model_Diffusion(denoise_fn = denoise_fn, hid_dim = train_z.shape[1]).to(device)
+    model = Model_Diffusion(denoise_fn = denoise_fn, hid_dim = projection_dim).to(device)
 
     optimizer = torch.optim.Adam(model.parameters(), lr=1e-4, weight_decay=0)
     scheduler = ReduceLROnPlateau(optimizer, mode='min', factor=0.9, patience=20)
