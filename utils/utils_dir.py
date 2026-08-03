@@ -57,7 +57,7 @@ def get_encoded_filename(config, term):
     path_model_save = get_ckpt_dir(config)
     if (not os.path.exists(path_model_save)):
         os.makedirs(path_model_save)
-    return os.path.join(path_model_save, "encoded_generated" + term + ".np")
+    return os.path.join(path_model_save, "encoded_generated" + term + ".npy")
 
 
 def get_model_torch_path(config, name_model, term):

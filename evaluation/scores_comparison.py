@@ -12,4 +12,4 @@ def scores_comparison(config, models:list[Model_for_Population_Synthesis]):
         scores_model = pd.read_csv(os.path.join(dir_path_evaluation_generated_data, "overview_score.csv"), sep=";", index_col="Metric")
         scores.loc[name[1:].replace("_"," "), metrics] = scores_model.loc[metrics, f"{config.attributes_setname}_{config.size_data_str}{name}"]
     print(scores)
-    scores.to_csv(os.path.join(config.sample_folder, config.variable, config.size_data_str, "quick_comparison.csv"), sep=";")
+    scores.to_csv(os.path.join("results", config.sample_folder, config.variable, config.size_data_str, "quick_comparison.csv"), sep=";")
