@@ -3,13 +3,13 @@ import os
 
 import torch
 import numpy as np
-from utils.utils_sample import get_categories_inverse, get_normalizer_num, preprocessing_cat_data_dataframe_sampling, process_nans
+from utils.utils_train import preprocess
 
 import shutil
 import pandas as pd
 
 from utils.utils_dir import get_data_dir, get_folder_sampling, get_file_path_sampling
-from utils.utils_import import get_info_file, import_data, import_torch_model
+from utils.utils_import import get_info_file, import_torch_model
 
 def sample_WGAN_alone(args, term, k = 256):
     
@@ -52,24 +52,15 @@ def sample_WGAN_alone(args, term, k = 256):
     info = get_info_file(args)[["Type", "Variable_name"]]
 
 
-    name_cat = info[info["Type"].isin(["binary","category","bool"])].reset_index()["Variable_name"]
+    info = get_info_file(args)[["Type", "Variable_name"]]
+
+
     idx_cat = np.arange(len(info))[info["Type"].isin(["binary","category","bool"])]
     idx_num = np.arange(len(info))[info["Type"].isin(["int","float"])]
+    name_cat = info["Variable_name"][info["Type"].isin(["binary","category","bool"])]
+    name_num = info["Variable_name"][info["Type"].isin(["int","float"])]
 
-
-    training_data = import_data(training_file,info["Variable_name"], name_cat)
-    
-    
-    training_data,_ = preprocessing_cat_data_dataframe_sampling(training_data, T_dict['cat_min_count'], name_cat)
-    training_data = process_nans(training_data.to_numpy(), idx_num, idx_cat, T_dict['num_nan_policy'], T_dict['cat_nan_policy'])
-    if (len(idx_num)>0):
-        num_inverse = get_normalizer_num(training_data[:,idx_num], T_dict['normalization'])
-    else:
-        num_inverse = lambda x: x
-    cat_inverse = get_categories_inverse(training_data[:,idx_cat])
-
-    d_numerical = len(idx_num)
-    categories = [len(np.unique(training_data[:,id])) for id in idx_cat]
+    _, _, categories, d_numerical, num_inverse, cat_inverse = preprocess(data_dir, filename_training, name_cat, name_num, T_dict, inverse=True )
 
     ####################
     ### Import Model ###
