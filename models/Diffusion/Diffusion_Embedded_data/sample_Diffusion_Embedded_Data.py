@@ -65,7 +65,7 @@ def sample_Diffusion_from_embedded_data(args, term, projection_dim = 1024):
     res = []
     for _ in tqdm(range(n)):
         n_samples = min(args.n_generation-tot, n_batch)
-        x = sample(model.denoise_fn_D, n_samples, in_dim, num_steps)
+        x = sample(model.denoise_fn_D, n_samples, in_dim, num_steps, device)
         tot+= n_samples
         res.append((x.cpu()*2 +mean_train).numpy())
     res = np.concatenate(res)
