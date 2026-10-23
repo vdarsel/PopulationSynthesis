@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-from sklearn.preprocessing import OneHotEncoder
 from sklearn.neighbors import NearestNeighbors
 import matplotlib.pyplot as plt
 
@@ -34,42 +33,70 @@ def preprocess_numerical_data(value_test, combi_test, proportion_test, col_num):
     values_num = []
     
     for id in col_num.index:
-        values_variable = value_test[combi_test == id]
-        values_variable = values_variable.astype(float)
+        mask = (combi_test == id)
+        values_variable = value_test[mask].astype(float)
         order = np.argsort(values_variable)
-        cum_prob = np.cumsum(proportion_test[combi_test == id][order])
-        temp = np.concatenate([[0], cum_prob])
-        centered_cum_prob = (temp[:-1] + temp[1:]) / 2
+        cum_prob = np.cumsum(proportion_test[mask][order])
+        temp = np.concatenate([[0.0], cum_prob])
+        centered_cum_prob = (temp[:-1] + temp[1:]) / 2.0
         
         repartition_function_num.append(centered_cum_prob)
         values_num.append(values_variable[order])
     
     return repartition_function_num, values_num
 
-def transform_continuous(values, repartition_function, v):
-    """Transform continuous values using the cumulative distribution."""
-    sup_v = np.min(np.concatenate([np.arange(len(values))[values > v], [len(values) - 1]]))
-    inf_v = np.max(np.concatenate([np.arange(len(values))[values <= v],[0]]))
-    repartition_function_v = repartition_function[inf_v] + \
-        (v - inf_v) / (sup_v - inf_v + 1e-3) * (repartition_function[sup_v] - repartition_function[inf_v])
-    return repartition_function_v
 
-def transform_categorical_data(df, df_ref, col_cat):
-    """Transform categorical data using OneHotEncoder."""
-    encoder = OneHotEncoder(sparse_output=False, handle_unknown="ignore")
-    encoder.fit(df_ref[col_cat].astype(str))
-    encoded_data = encoder.transform(df[col_cat].astype(str))
-    return encoded_data/np.sqrt(2)
+def _transform_continuous(x: np.ndarray, values: np.ndarray, cdf: np.ndarray,
+                          interpolation: str) -> np.ndarray:
+    """Transform continuous values using the cumulative distribution. Vectorized function
+
+    interpolation = "linear": proper piecewise-linear interpolation of the CDF between
+                              the observed values (clamped outside their range)
+    interpolation = "legacy": the exact formula of transform_continuous, in which the
+                              interpolation weight is (v - inf_v) / (sup_v - inf_v + 1e-3)
+                              with inf_v, sup_v the *positions* (not the values) in `values`
+    """
+    pos = np.searchsorted(values, x, side="right")   # number of observed values <= x
+    inf = np.maximum(pos - 1, 0)                      # last index with value <= x (0 if none)
+    sup = np.minimum(pos, len(values) - 1)            # first index with value > x (last if none)
+    if interpolation == "legacy":
+        w = (x - inf) / (sup - inf + 1e-3)
+    else:
+        lo, hi = values[inf], values[sup]
+        denom = hi - lo
+        w = np.divide(x - lo, denom, out=np.zeros_like(x), where=denom > 0)
+        w = np.clip(w, 0.0, 1.0)
+    out = cdf[inf] + w * (cdf[sup] - cdf[inf])
+    return np.where(np.isnan(x), 0.5, out)
 
 
-def transform_numerical_data(df, col_num, values_num, repartition_function_num):
-    """Apply transformations to numerical columns in the DataFrame."""
-    df_transformed = df.copy()
-    for i, col in enumerate(col_num):
-        df_transformed[col] = df[col].apply(
-            lambda v: transform_continuous(values_num[i], repartition_function_num[i], v)
-        )
-    return df_transformed
+def _encode(
+    frames: tuple[pd.DataFrame, pd.DataFrame, pd.DataFrame],
+    cdfs: list[np.ndarray],
+    values_num: list[np.ndarray],
+    num_cols: list[str],
+    cat_cols: list[str],
+    cat_ref: pd.DataFrame,
+    interpolation: str,
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Encode (generated, train, test) as float matrices; Euclidean distance on them is d."""
+    parts: list[list[np.ndarray]] = [[], [], []]
+
+    for col, values, cdf in zip(num_cols, values_num, cdfs):
+        for k, df in enumerate(frames):
+            x = pd.to_numeric(df[col], errors="coerce").to_numpy(float)
+            parts[k].append(_transform_continuous(x, values, cdf, interpolation)[:, None])
+
+    for c in cat_cols:
+        cats = pd.Index(cat_ref[c].astype(str).unique())
+        for k, df in enumerate(frames):
+            codes = pd.Categorical(df[c].astype(str), categories=cats).codes  # -1 = unknown
+            onehot = np.zeros((len(df), len(cats)))
+            known = codes >= 0
+            onehot[np.flatnonzero(known), codes[known]] = 1.0
+            parts[k].append(onehot / np.sqrt(2.0))
+
+    return tuple(np.hstack(p) if p else np.zeros((len(f), 0)) for p, f in zip(parts, frames))
 
 def Distance_to_Closest_Records(generated_data: pd.DataFrame, training_data: pd.DataFrame, test_data: pd.DataFrame, df_info: pd.DataFrame, proportion_test_file: str):
     print("Start Computation of Distance to Closest Records")
@@ -91,25 +118,10 @@ def Distance_to_Closest_Records(generated_data: pd.DataFrame, training_data: pd.
     test_data = test_data.head(min_len)
     print(f"Datasets size after croping:\tTraining:{len(training_data)}\tTesting:{len(test_data)}\tGenerated:{len(generated_data)}")
 
-    # Apply transformations to numerical data
-    generated_data_num = transform_numerical_data(generated_data[col_num], col_num, values_num, repartition_function_num)
-    training_data_num = transform_numerical_data(training_data[col_num], col_num, values_num, repartition_function_num)
-    test_data_num = transform_numerical_data(test_data[col_num], col_num, values_num, repartition_function_num)
     
-    # Extract numerical data from the original DataFrames
-    generated_data_num = generated_data_num[col_num].to_numpy()
-    training_data_num = training_data_num[col_num].to_numpy()
-    test_data_num = test_data_num[col_num].to_numpy()
-
-    # Transform categorical data using OneHotEncoder
-    generated_data_cat = transform_categorical_data(generated_data, test_data_original, col_cat)
-    training_data_cat = transform_categorical_data(training_data, test_data_original, col_cat)
-    test_data_cat = transform_categorical_data(test_data, test_data_original, col_cat)
-
-    # Concatenate numerical and categorical data
-    generated_data_transformed = np.concatenate([generated_data_num, generated_data_cat], axis=1)
-    training_data_transformed = np.concatenate([training_data_num, training_data_cat], axis=1)
-    test_data_transformed = np.concatenate([test_data_num, test_data_cat], axis=1)
+    (generated_data_transformed, training_data_transformed, test_data_transformed) = _encode((generated_data, training_data, test_data),
+                                                                                     repartition_function_num, values_num,
+                                                                                     col_num, col_cat, test_data_original, "linear")
 
     # Nearest Neighbors calculation
     nn = NearestNeighbors(n_neighbors=1, algorithm="auto")
@@ -129,3 +141,5 @@ def Distance_to_Closest_Records(generated_data: pd.DataFrame, training_data: pd.
     }, index=generated_data.index)
     print("Computation of Distance to Closest Records over")
     return res
+
+
