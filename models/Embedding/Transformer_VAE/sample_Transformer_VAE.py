@@ -19,9 +19,7 @@ from utils.utils_import import get_info_file, import_torch_model
 warnings.filterwarnings('ignore')
 
 def decode_Transformer_VAE(args, term):
-    
-    term_val = args.term
-    
+        
     
     name_experience= term.replace("_"," ")
     print(f"\n\n Decoding data for {name_experience} \n\n")
@@ -89,7 +87,7 @@ def decode_Transformer_VAE(args, term):
 
     decoder = Decoder_model(NUM_LAYERS, d_numerical, categories, D_TOKEN, n_head = N_HEAD, factor = FACTOR)
 
-    decoder.load_state_dict(import_torch_model(args, "decoder_Transformer_VAE", term_val))
+    decoder.load_state_dict(import_torch_model(args, "decoder_Transformer_VAE", term))
     decoder = decoder.to(device)
 
     data = data_column.reshape(n_sample, -1, D_TOKEN)
